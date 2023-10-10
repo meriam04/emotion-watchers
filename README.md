@@ -8,11 +8,11 @@ PUT IMAGE HERE
 
 This project continues the research of EmoPupil, which was also conducted under the supervision of Professor Hatzinakos.
  
-This project will build upon EmoPupil, which involves using pupillometry to analyze internal emotions 👀
+This project will build upon EmoPupil, which involves using pupillometry to analyze internal emotions
 
-In addition to pupillometry, this project will interpret facial expressions from images for emotion classification 😄
+In addition to pupillometry, this project will interpret facial expressions from images for emotion classification
 
-An AI model can make more inferences given more data, therefore fusing these modalities will result in better performance and reliability, beyond EmoPupil or other conventional projects 😄 + 👀 = 💻
+An AI model can make more inferences given more data, therefore fusing these modalities will result in better performance and reliability, beyond EmoPupil or other conventional projects
 
 
 Project Goal:
