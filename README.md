@@ -77,6 +77,7 @@
     <li><a href="#usage">Usage</a></li>
     -->
     <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="#references">References</a></li>
     <!--
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
@@ -92,18 +93,18 @@
 ## About The Project
 
 <!--
-[![Emotion Watchers Screen Shot][product-screenshot]]
+![Emotion Watchers Screen Shot][product-screenshot]
 -->
 
 This project continues the research of EmoPupil, a machine learning model that uses pupillometry data to recognize emotions. This project aims to build upon this by adding in a facial expression modality that will give the model more information to work with, and therefore the potential for better emotion classification accuracy.
 
 This figure demonstrates the training pass of our machine learning model.
 
-[![Training Pass][training-pass]]
+![Training Pass][training-pass]
 
 This figure demonstrates the testing pass of our machine learning model.
 
-[![Testing Pass][testing-pass]]
+![Testing Pass][testing-pass]
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -185,6 +186,13 @@ _For more examples, please refer to the [Documentation](https://example.com)_
 - [ ] Model training and hyperparameter tuning
 
 See the [open issues](https://github.com/meriam04/emotion-watchers/issues) for a full list of proposed features (and known issues).
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- REFERENCES -->
+## References
+
+- [ReadMe Template](https://github.com/othneildrew/Best-README-Template)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
