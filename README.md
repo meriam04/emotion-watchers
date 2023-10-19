@@ -92,16 +92,18 @@
 ## About The Project
 
 <!--
-![Emotion Watchers Screen Shot][product-screenshot]
+[![Emotion Watchers Screen Shot][product-screenshot]]
 -->
 
 This project continues the research of EmoPupil, a machine learning model that uses pupillometry data to recognize emotions. This project aims to build upon this by adding in a facial expression modality that will give the model more information to work with, and therefore the potential for better emotion classification accuracy.
 
 This figure demonstrates the training pass of our machine learning model.
-![Training Pass][training-pass]
+
+[![Training Pass][training-pass]]
 
 This figure demonstrates the testing pass of our machine learning model.
-![Testing Pass][testing-pass]
+
+[![Testing Pass][testing-pass]]
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
