@@ -1,7 +1,7 @@
 from pathlib import Path
 import pytest
 
-from video_to_images import extract_frames
+from ..video_to_images import extract_frames
 
 @pytest.mark.parametrize("test_video, test_rate, expected_num_images,",
     [(Path(__file__).parent / "keyboard_cat.mp4", 1, 54),
