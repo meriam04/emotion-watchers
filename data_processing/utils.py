@@ -13,5 +13,5 @@ class Region:
 
 @dataclass
 class Resolution:
-    width: int
     height: int
+    width: int

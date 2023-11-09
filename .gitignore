@@ -1,5 +1,3 @@
 venv/
-data_processing/tests/images
-data_processing/tests/cropped
-data_processing/testing/__pycache__
-data_processing/tests/__pycache__
+data_processing/tests/test_files/cropped
+.*/__pycache__

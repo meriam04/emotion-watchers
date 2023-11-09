@@ -3,11 +3,11 @@
 import cv2
 import os
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
-from .utils import Region, Resolution
+from .utils import Point, Region, Resolution
 
-def crop_and_resize_image(image_path: Path, crop_region: Region, resolution: Resolution) -> Path:
+def crop_and_resize_image(image_path: Path, crop_region: Optional[Region], resolution: Resolution) -> Path:
     """
     This function crops an image using the specified crop region.
     It expects a region to be defined.\n
@@ -15,6 +15,13 @@ def crop_and_resize_image(image_path: Path, crop_region: Region, resolution: Res
     """
 
     image = cv2.imread(str(image_path))
+
+    if not crop_region:
+        height, width, _ = image.shape
+        top_left = Point((width - resolution.width) // 2, (height - resolution.height) // 2)
+        bottom_right = Point(top_left.x + resolution.width, top_left.y + resolution.height)
+        crop_region = Region(top_left, bottom_right)
+
     cropped_image = image[crop_region.top_left.y:crop_region.bottom_right.y, crop_region.top_left.x:crop_region.bottom_right.x]
     resized_image = cv2.resize(cropped_image, (resolution.width, resolution.height))
 
@@ -28,7 +35,7 @@ def crop_and_resize_image(image_path: Path, crop_region: Region, resolution: Res
     
     return cropped_image_path
 
-def crop_and_resize_images(image_paths: List[Path], crop_region: Region, resolution: Resolution) -> List[Path]:
+def crop_and_resize_images(image_paths: List[Path], crop_region: Optional[Region], resolution: Resolution) -> List[Path]:
     """
     This function crops a series of images using the specified crop region.
     It expects a region to be defined.\n
