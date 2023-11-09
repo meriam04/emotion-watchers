@@ -10,3 +10,8 @@ class Point:
 class Region:
     top_left: Point
     bottom_right: Point
+
+@dataclass
+class Resolution:
+    height: int
+    width: int
