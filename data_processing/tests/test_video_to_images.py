@@ -3,12 +3,14 @@ import pytest
 
 from ..video_to_images import extract_frames
 
+test_files_dir = Path(__file__).parent / "test_files"
+
 @pytest.mark.parametrize("test_video, test_rate, expected_num_images,",
-    [(Path(__file__).parent / "keyboard_cat.mp4", 1, 54),
-     (Path(__file__).parent / "keyboard_cat.mp4", 2, 109),
-     (Path(__file__).parent / "keyboard_cat.mp4", 3, 163),])
+    [(test_files_dir / "keyboard_cat.mp4", 1, 54),
+     (test_files_dir / "keyboard_cat.mp4", 2, 109),
+     (test_files_dir / "keyboard_cat.mp4", 3, 163),])
 def test_extract_frames(test_video, test_rate, expected_num_images):
-    image_paths = extract_frames(test_video, test_rate, Path(__file__).parent / "images")
+    image_paths = extract_frames(test_video, test_rate, test_files_dir / "images")
     assert len(image_paths) == expected_num_images
 
     for image_path in image_paths:
@@ -20,4 +22,4 @@ def test_extract_frames(test_video, test_rate, expected_num_images):
      (Path(__file__))])
 def test_nonexistent_video(test_video):
     with pytest.raises(Exception):
-        extract_frames(test_video, 1, Path(__file__).parent / "images")
+        extract_frames(test_video, 1, test_files_dir / "images")
