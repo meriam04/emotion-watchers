@@ -1,0 +1,4 @@
+python ./data_processing/data_processing.py ./data/1_cs_joy_demo.mp4 ./data/1_cs_joy_demo/
+cd baseline/demo
+python ./binary.py
+python ./multiclass.py
