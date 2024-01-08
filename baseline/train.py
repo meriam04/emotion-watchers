@@ -1,4 +1,5 @@
 import numpy as np
+import os
 from pathlib import Path
 import torch
 import torch.nn as nn
@@ -19,6 +20,7 @@ def get_data(data_dir, batch_size = 32):
 
     # Load the dataset
     dataset = torchvision.datasets.ImageFolder(data_dir, transform=transform)
+    dataset.classes = [c for c in os.listdir(data_dir)]
 
     # Make a list of indices for the dataset
     indices = []
@@ -41,7 +43,7 @@ def get_data(data_dir, batch_size = 32):
     test_sampler = SubsetRandomSampler(test_indices)
     test_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,num_workers=1, sampler=test_sampler)
 
-    return train_loader, val_loader, test_loader
+    return train_loader, val_loader, test_loader, dataset.classes
 
 def get_accuracy(model, data_loader):
     correct = 0
@@ -104,7 +106,7 @@ def train(model, train_loader, val_loader, batch_size=32, learning_rate=0.01, nu
 
 if __name__ == "__main__":
     np.random.seed(496)
-    train_loader, val_loader, _ = get_data(BASELINE_DATA_DIR)
+    train_loader, val_loader, _, _ = get_data(BASELINE_DATA_DIR)
 
     model = MulticlassClassifier()
 

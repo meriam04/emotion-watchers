@@ -1,4 +1,5 @@
 venv/
+data/
 data_processing/tests/test_files/cropped
 data_processing/tests/test_files/images
 **/__pycache__
