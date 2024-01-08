@@ -15,6 +15,7 @@ def crop_and_resize_image(image_path: Path, crop_region: Optional[Region], resol
     """
 
     image = cv2.imread(str(image_path))
+
     if not crop_region:
         height, width, _ = image.shape
         top_left = Point((width - resolution.width) // 2, (height - resolution.height) // 2)
