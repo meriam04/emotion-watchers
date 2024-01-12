@@ -1,6 +1,8 @@
 import numpy as np
 import os
 from pathlib import Path
+import pickle
+import re
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -11,8 +13,18 @@ import torchvision.transforms as transforms
 from classifier import BinaryClassifier, MulticlassClassifier
 
 BASELINE_DATA_DIR = Path(__file__).parent.parent / "data/baseline"
+TEST_SET_PATH = Path(__file__).parent / "test_set.pkl"
 
-def get_data(data_dir, batch_size = 32):
+def get_individual_sets(samples, test_indices):
+    individual_sets = {}
+    for test_idx in test_indices:
+        individual = re.search(".*\d_(?P<individual>\w+)_\w+_\d+\.\d+_c\.png", samples[test_idx][0])["individual"]
+        if individual not in individual_sets:
+            individual_sets[individual] = []
+        individual_sets[individual].append(test_idx)
+    return individual_sets
+
+def get_data(data_dir, test_indices = None, save_test_indices = False, batch_size = 32):
     # Transform the images to tensors of normalized range [-1, 1]
     transform = transforms.Compose(
             [transforms.ToTensor(),
@@ -39,9 +51,16 @@ def get_data(data_dir, batch_size = 32):
     val_indices = indices[train_val_split:val_test_split]
     val_sampler = SubsetRandomSampler(val_indices)
     val_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, num_workers=1, sampler=val_sampler)
-    test_indices = indices[val_test_split:]
+    
+    if not test_indices:
+        test_indices = indices[val_test_split:]
     test_sampler = SubsetRandomSampler(test_indices)
     test_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,num_workers=1, sampler=test_sampler)
+
+    if save_test_indices:
+        individual_sets = get_individual_sets(dataset.samples, test_indices)
+        with open(TEST_SET_PATH, 'wb') as f:
+            pickle.dump(individual_sets, f)
 
     return train_loader, val_loader, test_loader, dataset.classes
 
@@ -106,7 +125,7 @@ def train(model, train_loader, val_loader, batch_size=32, learning_rate=0.01, nu
 
 if __name__ == "__main__":
     np.random.seed(496)
-    train_loader, val_loader, _, _ = get_data(BASELINE_DATA_DIR)
+    train_loader, val_loader, _, _ = get_data(BASELINE_DATA_DIR, save_test_indices=True)
 
     model = MulticlassClassifier()
 
