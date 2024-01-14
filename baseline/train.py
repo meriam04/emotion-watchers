@@ -127,6 +127,6 @@ if __name__ == "__main__":
     np.random.seed(496)
     train_loader, val_loader, _, _ = get_data(BASELINE_DATA_DIR, save_test_indices=True)
 
-    model = MulticlassClassifier()
+    model = BinaryClassifier()
 
     train(model, train_loader, val_loader, learning_rate=0.005, num_epochs=10)

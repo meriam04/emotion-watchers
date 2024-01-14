@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 from typing import List, Optional
 
-from .utils import Point, Region, Resolution
+from utils import Point, Region, Resolution
 
 def crop_and_resize_image(image_path: Path, crop_region: Optional[Region], resolution: Resolution) -> Path:
     """

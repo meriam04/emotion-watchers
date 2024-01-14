@@ -4,13 +4,13 @@ from pathlib import Path
 import sys
 from typing import List
 
-from .crop_and_resize_images import crop_and_resize_images
-from .utils import Point, Region, Resolution
-from .video_to_images import extract_frames
+from crop_and_resize_images import crop_and_resize_images
+from utils import Point, Region, Resolution
+from video_to_images import extract_frames
 
 RATE = 1
-TOP_LEFT = Point(100, 100)
-BOTTOM_RIGHT = Point(324, 324)
+TOP_LEFT = Point(430, 80)
+BOTTOM_RIGHT = Point(930, 580)
 RESOLUTION = Resolution(224, 224)
 
 def data_processing(video_path: Path, output_path: Path) -> List[Path]:
