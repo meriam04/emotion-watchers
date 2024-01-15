@@ -8,10 +8,12 @@ from face.crop_and_resize_images import crop_and_resize_images
 from utils import Point, Region, Resolution
 from face.video_to_images import extract_frames
 
+#If we are making a UI, return these values for TOP_LEFT and BOTTOM_RIGHT 
 RATE = 1
 TOP_LEFT = Point(430, 80)
 BOTTOM_RIGHT = Point(930, 580)
 RESOLUTION = Resolution(224, 224)
+#Add FILE_LIST as global variable 
 
 
 def data_processing(video_path: Path, output_path: Path) -> List[Path]:
@@ -23,3 +25,5 @@ def data_processing(video_path: Path, output_path: Path) -> List[Path]:
 
 if __name__ == "__main__":
     data_processing(Path(sys.argv[1]), Path(sys.argv[2]))
+
+#Adding a function to move the images to the corresponding directory 
