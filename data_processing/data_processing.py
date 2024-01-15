@@ -23,3 +23,5 @@ if __name__ == "__main__":
     data_processing(Path(sys.argv[1]), Path(sys.argv[2]))
 
 #Adding a function to move the images to the corresponding directory 
+    #Data/baseline/emotion 
+    #seperate from the overall /baseline folder 
