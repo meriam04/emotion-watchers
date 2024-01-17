@@ -4,9 +4,9 @@ from pathlib import Path
 import sys
 from typing import List
 
-from crop_and_resize_images import crop_and_resize_images
-from utils import Point, Region, Resolution
-from video_to_images import extract_frames
+from .crop_and_resize_images import crop_and_resize_images
+from .utils import Point, Region, Resolution
+from .video_to_images import extract_frames
 
 RATE = 1
 TOP_LEFT = Point(430, 80)
