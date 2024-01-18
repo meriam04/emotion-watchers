@@ -27,23 +27,44 @@ if __name__ == "__main__":
 #Adding a function to move the images to the corresponding directory 
     #Data/baseline/emotion 
     #seperate from the overall /baseline folder 
-    #All negative emotions and positive emotions have to be mapped 
+    #All negative emotions and positive emotions have to be mapped
+
+############## BINARY SEPARATOR ############# 
 def separate_images_binary(source_folder, positive_folder, negative_folder, keyword):
     os.makedirs(positive_folder, exist_ok=True)
     os.makedirs(negative_folder, exist_ok=True)
 
-    for filename in os.listdir(source_folder):
-        source_path = os.path.join(source_folder, filename)
+    positive_keywords = ["happy", "fun", "calm", "joy"]
+    negative_keywords = ["anger", "sad", "fear"]
 
-        # Check if the keyword is present in the filename
-        if keyword in filename:
-            destination_path = os.path.join(positive_folder, filename)
+    for folder_name in os.listdir(source_folder):
+        source_path = os.path.join(source_folder, folder_name)
+
+        #Checking if cropped directory exists 
+        for folder_name in os.listdir(source_folder):
+            source_path = os.path.join(source_folder, folder_name)
+            cropped_folder_path = os.path.join(source_path, "cropped")
+
+        if os.path.exists(cropped_folder_path) and os.path.isdir(cropped_folder_path):
+            # Check if the folder name contains positive or negative keywords
+            if any(keyword in folder_name for keyword in positive_keywords):
+                destination_path = os.path.join(positive_folder, folder_name)
+            elif any(keyword in folder_name for keyword in negative_keywords):
+                destination_path = os.path.join(negative_folder, folder_name)
+            else:
+                print(f"Folder {folder_name} does not match positive or negative criteria, skipping.")
+                continue
+
+            # Move all files from the source folder to the appropriate destination folder
+            files = os.listdir(source_path)
+            for filename in files:
+                source_file_path = os.path.join(source_path, filename)
+                destination_file_path = os.path.join(destination_path, filename)
+                shutil.move(source_file_path, destination_file_path)
+                print(f"Moved {filename} to {destination_path}")
+
         else:
-            destination_path = os.path.join(negative_folder, filename)
-
-        # Move the file to the appropriate folder
-        shutil.move(source_path, destination_path)
-        print(f"Moved {filename} to {destination_path}")
+            print(f"Folder {folder_name} does not contain a 'cropped' directory, skipping.")
 
 # Example usage:
 #source_folder = "/data"
@@ -52,7 +73,8 @@ def separate_images_binary(source_folder, positive_folder, negative_folder, keyw
 #keyword = "positive"
 
 #separate_images_binary(source_folder, positive_folder, negative_folder, keyword)
-
+        
+######### MULTICLASS SEPERATOR ###############
 def separate_images_multiple(source_folder, output_folders, keywords):
     for folder in output_folders:
         os.makedirs(folder, exist_ok=True)
