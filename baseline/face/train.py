@@ -8,15 +8,16 @@ from torch.utils.data.sampler import SubsetRandomSampler
 import torchvision
 import torchvision.transforms as transforms
 
-from classifier import BinaryClassifier, MulticlassClassifier
+from .classifier import BinaryClassifier, MulticlassClassifier
 
 BASELINE_DATA_DIR = Path(__file__).parent.parent / "data/baseline"
 
-def get_data(data_dir, batch_size = 32):
+
+def get_data(data_dir, batch_size=32):
     # Transform the images to tensors of normalized range [-1, 1]
     transform = transforms.Compose(
-            [transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+        [transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
+    )
 
     # Load the dataset
     dataset = torchvision.datasets.ImageFolder(data_dir, transform=transform)
@@ -35,37 +36,47 @@ def get_data(data_dir, batch_size = 32):
     # Split the indices and load the dataset using the split indices into train_loader, val_loader, and test_loader
     train_indices = indices[:train_val_split]
     train_sampler = SubsetRandomSampler(train_indices)
-    train_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, num_workers=1, sampler=train_sampler)
+    train_loader = torch.utils.data.DataLoader(
+        dataset, batch_size=batch_size, num_workers=1, sampler=train_sampler
+    )
     val_indices = indices[train_val_split:val_test_split]
     val_sampler = SubsetRandomSampler(val_indices)
-    val_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, num_workers=1, sampler=val_sampler)
+    val_loader = torch.utils.data.DataLoader(
+        dataset, batch_size=batch_size, num_workers=1, sampler=val_sampler
+    )
     test_indices = indices[val_test_split:]
     test_sampler = SubsetRandomSampler(test_indices)
-    test_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,num_workers=1, sampler=test_sampler)
+    test_loader = torch.utils.data.DataLoader(
+        dataset, batch_size=batch_size, num_workers=1, sampler=test_sampler
+    )
 
     return train_loader, val_loader, test_loader, dataset.classes
+
 
 def get_accuracy(model, data_loader):
     correct = 0
     total = 0
     for imgs, labels in iter(data_loader):
         output = model(imgs)
-        
-        #select index with maximum prediction score
+
+        # select index with maximum prediction score
         pred = output.max(1, keepdim=True)[1]
         correct += pred.eq(labels.view_as(pred)).sum().item()
         total += imgs.shape[0]
     return correct / total
 
+
 def get_model_name(name, batch_size, learning_rate, epoch):
-    path = "model_{0}_bs{1}_lr{2}_epoch{3}".format(name,
-                                                   batch_size,
-                                                   learning_rate,
-                                                   epoch)
+    path = "model_{0}_bs{1}_lr{2}_epoch{3}".format(
+        name, batch_size, learning_rate, epoch
+    )
     return path
 
+
 # Training
-def train(model, train_loader, val_loader, batch_size=32, learning_rate=0.01, num_epochs=10): 
+def train(
+    model, train_loader, val_loader, batch_size=32, learning_rate=0.01, num_epochs=10
+):
     # I chose cross entropy loss because this is a classification problem
     criterion = nn.CrossEntropyLoss()
     # I chose to use SGD with momentum to better search for a global maximum and easily navigate ravines
@@ -90,19 +101,21 @@ def train(model, train_loader, val_loader, batch_size=32, learning_rate=0.01, nu
 
         # Save the training/validation loss/accuracy
         iters.append(n)
-        losses.append(float(loss)/batch_size)
+        losses.append(float(loss) / batch_size)
         train_acc.append(get_accuracy(model, train_loader))
         val_acc.append(get_accuracy(model, val_loader))
         n += 1
-        print(("Epoch {}: Train acc: {}, Train loss: {} |"+
-              "Validation acc: {}").format(
-                  epoch + 1,
-                  train_acc[epoch],
-                  losses[epoch],
-                  val_acc[epoch]))
+        print(
+            ("Epoch {}: Train acc: {}, Train loss: {} |" + "Validation acc: {}").format(
+                epoch + 1, train_acc[epoch], losses[epoch], val_acc[epoch]
+            )
+        )
         # Save the current model (checkpoint) to a file
-        model_path = get_model_name(model.name, batch_size, learning_rate, epoch) + ".weights"
+        model_path = (
+            get_model_name(model.name, batch_size, learning_rate, epoch) + ".weights"
+        )
         torch.save(model.state_dict(), model_path)
+
 
 if __name__ == "__main__":
     np.random.seed(496)
