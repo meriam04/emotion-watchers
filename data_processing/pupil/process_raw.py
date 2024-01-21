@@ -40,5 +40,5 @@ def load_raw(pkl_path: Path) -> Dict[str, List[Tuple]]:
 
 
 if __name__ == "__main__":
-    # process_raw(Path(sys.argv[1]), Path(sys.argv[2]))
+    process_raw(Path(sys.argv[1]), Path(sys.argv[2]))
     print(load_raw(Path(sys.argv[2])))
