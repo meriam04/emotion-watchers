@@ -1,6 +1,9 @@
+#!/usr/bin/env python3
+
 import numpy as np
 import os
 from pathlib import Path
+import sys
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -9,8 +12,6 @@ import torchvision
 import torchvision.transforms as transforms
 
 from .classifier import BinaryClassifier, MulticlassClassifier
-
-BASELINE_DATA_DIR = Path(__file__).parent.parent / "data/baseline"
 
 
 def get_data(data_dir, batch_size=32):
@@ -119,7 +120,7 @@ def train(
 
 if __name__ == "__main__":
     np.random.seed(496)
-    train_loader, val_loader, _, _ = get_data(BASELINE_DATA_DIR)
+    train_loader, val_loader, _, _ = get_data(Path(sys.argv[1]))
 
     model = MulticlassClassifier()
 

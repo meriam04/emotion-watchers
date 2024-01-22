@@ -5,12 +5,11 @@ class LSTMClassifier(nn.Module):
     def __init__(self):
         super(LSTMClassifier, self).__init__()
         self.name = "LSTM Model"
-        self.lstm = nn.LSTM(1, 16, 1, batch_first=True)
-        self.fc1 = nn.Linear(16, 1)
+        self.lstm = nn.LSTM(1, 50, 1)
+        self.fc1 = nn.Linear(50, 6)
 
     def forward(self, x):
         x, _ = self.lstm(x)
-        x = x[:, -1, :]
         x = self.fc1(x)
         x = x.squeeze(1)
         return x

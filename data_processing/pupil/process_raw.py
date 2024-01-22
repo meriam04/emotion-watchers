@@ -6,7 +6,12 @@ import re
 import sys
 from typing import Dict, List, Tuple
 
-ID_TO_EMOTION = {2: "joy", 3: "joy", 4: "joy", 5: "anger", 6: "anger", 7: "anger"}
+ID_TO_EMOTION = {2: "joy", 3: "joy", 4: "joy",
+                 5: "anger", 6: "anger", 7: "anger",
+                 8: "fear", 9: "fear", 10: "fear", 11: "fear", 12: "fear",
+                 13: "fun", 14: "fun", 15: "fun", 16: "fun",
+                 17: "sad", 18: "sad", 19: "sad", 20: "sad", 21: "sad",
+                 22: "happy", 23: "happy", 24: "happy", 25: "happy"}
 
 
 def process_raw(yaml_path: Path, pkl_path: Path):
