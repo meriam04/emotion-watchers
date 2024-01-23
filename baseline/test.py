@@ -3,14 +3,16 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
+import pickle
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import torch
 
 from classifier import BinaryClassifier, MulticlassClassifier
 from train import get_accuracy, get_data, BASELINE_DATA_DIR
 
-BASELINE_WEIGHTS_DIR = Path(__file__).parent / "Multiclass_CM.weights"
+BASELINE_WEIGHTS_PATH = Path(__file__).parent / "Binary_CKM.weights"
 CONFUSION_MATRIX_PATH = Path(__file__).parent / "confusion_matrix.png"
+TEST_SET_PATH = Path(__file__).parent / "test_set-Binary_CKM.pkl"
 
 def make_confusion_matrix(model, data_loader, classes):
     truth = []
@@ -27,12 +29,20 @@ def make_confusion_matrix(model, data_loader, classes):
     plt.savefig(CONFUSION_MATRIX_PATH)
 
 if __name__ == "__main__":
-    np.random.seed(496)
+    model = BinaryClassifier()
+    model.load_state_dict(torch.load(BASELINE_WEIGHTS_PATH))
 
-    _, _, test_loader, classes = get_data(BASELINE_DATA_DIR)
+    with open(TEST_SET_PATH, 'rb') as f:
+        test_set = pickle.load(f)
 
-    model = MulticlassClassifier()
-    model.load_state_dict(torch.load(BASELINE_WEIGHTS_DIR))
+    total_indices = []
+    for individual, indices in test_set.items():
+        _, _, test_loader, _ = get_data(BASELINE_DATA_DIR, indices)
+        print(f"{individual} accuracy: {get_accuracy(model, test_loader)}")
+
+        total_indices.extend(indices)
+
+    _, _, test_loader, classes = get_data(BASELINE_DATA_DIR, total_indices)
 
     make_confusion_matrix(model, test_loader, classes)
-    print(get_accuracy(model, test_loader))
+    print(f"Total accuracy: {get_accuracy(model, test_loader)}")
