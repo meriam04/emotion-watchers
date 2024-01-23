@@ -59,5 +59,4 @@ import pytest
     ],
 )
 def test_individual_sets(samples, indices, individual_sets):
-    print(get_individual_sets(samples, indices))
     assert get_individual_sets(samples, indices) == individual_sets
