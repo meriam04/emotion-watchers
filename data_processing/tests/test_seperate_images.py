@@ -1,7 +1,9 @@
 import os
 import pytest
 from pathlib import Path
-from data_processing import separate_images_binary, separate_images_multiple
+from ..data_processing import separate_images_binary, separate_images_multiple
+from ..crop_and_resize_images import crop_and_resize_image, crop_and_resize_images
+from ..utils import Point, Region, Resolution
 
 @pytest.fixture
 def setup_folders(tmp_path):
