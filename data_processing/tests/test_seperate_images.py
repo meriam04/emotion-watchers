@@ -42,7 +42,10 @@ def setup_folders(tmp_path):
 
     return source_folder, positive_folder, negative_folder, output_folders, keywords
 
+@pytest.mark.parametrize("setup_folders,",
+                        [()])
 def test_separate_images_binary(setup_folders):
+    #Make these the parameters. 
     source_folder, positive_folder, negative_folder, _, _ = setup_folders
     keyword = "positive"
     separate_images_binary(source_folder, positive_folder, negative_folder, keyword)
