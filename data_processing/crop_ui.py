@@ -2,6 +2,7 @@ import os
 from tkinter import Tk, Canvas, Button, filedialog
 from PIL import Image, ImageTk
 
+
 #"Crop All" crops all the pictures in the folder
 #Prefixes the cropped pictures with "cropped_"
 #creates a .txt file with all the coordinates of the pictures
