@@ -5,6 +5,8 @@ import sys
 import os
 import shutil
 from typing import List
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 from .crop_and_resize_images import crop_and_resize_images
 from .utils import Point, Region, Resolution
@@ -37,42 +39,81 @@ def separate_images_binary(source_folder, positive_folder, negative_folder, keyw
     positive_keywords = ["happy", "fun", "calm", "joy"]
     negative_keywords = ["anger", "sad", "fear"]
 
+    print("Source folder:", source_folder)
     for folder_name in os.listdir(source_folder):
+        logging.debug("Subfolder:", folder_name)
         source_path = os.path.join(source_folder, folder_name)
 
-        #Checking if cropped directory exists 
-        for folder_name in os.listdir(source_folder):
-            source_path = os.path.join(source_folder, folder_name)
+        # Check if the folder name contains "cropped"
+        if os.path.isdir(source_path) and "cropped" in os.listdir(source_path):
             cropped_folder_path = os.path.join(source_path, "cropped")
 
-        if os.path.exists(cropped_folder_path) and os.path.isdir(cropped_folder_path):
+            print("Cropped folder path:", cropped_folder_path)
             # Check if the folder name contains positive or negative keywords
             if any(keyword in folder_name for keyword in positive_keywords):
-                destination_path = os.path.join(positive_folder, folder_name)
+                destination_path = positive_folder
+                logging.debug("Keyword matched: Positive")
             elif any(keyword in folder_name for keyword in negative_keywords):
-                destination_path = os.path.join(negative_folder, folder_name)
+                destination_path = negative_folder
+                logging.debug("Keyword matched: Negative")
             else:
-                print(f"Folder {folder_name} does not match positive or negative criteria, skipping.")
+                logging.debug(f"Folder {folder_name} does not match positive or negative criteria, skipping.")
                 continue
 
-            # Move all files from the source folder to the appropriate destination folder
-            files = os.listdir(source_path)
+            # Move all files from the cropped folder to the appropriate destination folder
+            files = os.listdir(cropped_folder_path)
             for filename in files:
-                source_file_path = os.path.join(source_path, filename)
+                source_file_path = os.path.join(cropped_folder_path, filename)
                 destination_file_path = os.path.join(destination_path, filename)
                 shutil.move(source_file_path, destination_file_path)
-                print(f"Moved {filename} to {destination_path}")
+                logging.debug(f"Moved {filename} to {destination_path}")
 
         else:
-            print(f"Folder {folder_name} does not contain a 'cropped' directory, skipping.")
+            logging.debug(f"Folder {folder_name} does not contain a 'cropped' directory, skipping.")
 
-# Example usage:
-#source_folder = "/data"
-#positive_folder = "/data/baseline/positive"
-#negative_folder = "/data/baseline/negative"
-#keyword = "positive"
+# def separate_images_binary(source_folder, positive_folder, negative_folder, keyword):
+#     os.makedirs(positive_folder, exist_ok=True)
+#     os.makedirs(negative_folder, exist_ok=True)
 
-#separate_images_binary(source_folder, positive_folder, negative_folder, keyword)
+#     positive_keywords = ["happy", "fun", "calm", "joy"]
+#     negative_keywords = ["anger", "sad", "fear"]
+
+#     for folder_name in os.listdir(source_folder):
+#         source_path = os.path.join(source_folder, folder_name)
+
+#         #Checking if cropped directory exists 
+#         for folder_name in os.listdir(source_folder):
+#             source_path = os.path.join(source_folder, folder_name)
+#             cropped_folder_path = os.path.join(source_path, "cropped")
+
+#         if os.path.exists(cropped_folder_path) and os.path.isdir(cropped_folder_path):
+#             # Check if the folder name contains positive or negative keywords
+#             if any(keyword in folder_name for keyword in positive_keywords):
+#                 destination_path = os.path.join(positive_folder, folder_name)
+#             elif any(keyword in folder_name for keyword in negative_keywords):
+#                 destination_path = os.path.join(negative_folder, folder_name)
+#             else:
+#                 print(f"Folder {folder_name} does not match positive or negative criteria, skipping.")
+#                 continue
+
+#             # Move all files from the source folder to the appropriate destination folder
+#             files = os.listdir(source_path)
+#             for filename in files:
+#                 source_file_path = os.path.join(source_path, filename)
+#                 destination_file_path = os.path.join(destination_path, filename)
+#                 shutil.move(source_file_path, destination_file_path)
+#                 print(f"Moved {filename} to {destination_path}")
+
+#         else:
+#             print(f"Folder {folder_name} does not contain a 'cropped' directory, skipping.")
+
+# # Example usage:
+# #source_folder = "/data"
+# #positive_folder = "/data/baseline/positive"
+# #negative_folder = "/data/baseline/negative"
+# #keyword = "positive"
+
+# #separate_images_binary(source_folder, positive_folder, negative_folder, keyword)
         
 ######### MULTICLASS SEPERATOR ###############
 def separate_images_multiple(source_folder, output_folders, keywords):
