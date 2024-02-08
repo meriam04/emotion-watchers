@@ -14,8 +14,8 @@ from .video_to_images import extract_frames
 
 #If we are making a UI, return these values for TOP_LEFT and BOTTOM_RIGHT 
 RATE = 1
-TOP_LEFT = Point(100, 100)
-BOTTOM_RIGHT = Point(324, 324)
+TOP_LEFT = Point(430, 80)
+BOTTOM_RIGHT = Point(930, 580)
 RESOLUTION = Resolution(224, 224)
 #Add FILE_LIST as global variable 
 
