@@ -29,18 +29,13 @@ def data_processing(video_path: Path, output_path: Path) -> List[Path]:
 if __name__ == "__main__":
     data_processing(Path(sys.argv[1]), Path(sys.argv[2]))
 
-# Adding a function to move the images to the corresponding directory
-# Data/baseline/emotion
-# seperate from the overall /baseline folder
-# All negative emotions and positive emotions have to be mapped
-
 
 #################### BINARY SEPARATOR ######################
 def separate_images_binary(source_dirs, output_dir):
     """
-    Takes in a source folder and separates the images into positive and negative folders
+    Takes in a list of source folders and separates the images into positive and negative folders
     based on the emotion keyword in the source folder name.
-    Source folder should contain a 'cropped' directory with the images to be copied.
+    Each source folder should contain a 'cropped' directory with the images to be copied.
     """
     for source_dir in source_dirs:
         if not os.path.exists(source_dir):
@@ -93,136 +88,60 @@ def separate_images_binary(source_dirs, output_dir):
 
     return positive_dir, negative_dir
 
-    # for folder_name in os.listdir(source_dir):
-    #     logging.debug("Subfolder: %s", folder_name)
-    #     source_path = os.path.join(source_dir, folder_name)
 
-    #     # Check if the folder name contains "cropped"
-    #     if os.path.isdir(source_path) and "cropped" in os.listdir(source_path):
-    #         cropped_folder_path = os.path.join(source_path, "cropped")
-
-    #         logging.debug("Cropped folder path: %s", cropped_folder_path)
-    #         # Check if the folder name contains positive or negative keywords
-
-    #         if any(keyword in folder_name for keyword in positive_keywords):
-    #             destination_path = positive_dir
-    #             logging.debug("Keyword matched: Positive")
-    #         elif any(keyword in folder_name for keyword in negative_keywords):
-    #             destination_path = negative_dir
-    #             logging.debug("Keyword matched: Negative")
-    #         else:
-    #             logging.debug(
-    #                 "Folder %s does not match positive or negative criteria, skipping.",
-    #                 folder_name,
-    #             )
-    #             continue
-
-    #         # Move all files from the cropped folder to the appropriate destination folder
-    #         files = os.listdir(cropped_folder_path)
-    #         for filename in files:
-    #             source_file_path = os.path.join(cropped_folder_path, filename)
-    #             destination_file_path = os.path.join(destination_path, filename)
-    #             shutil.move(source_file_path, destination_file_path)
-    #             logging.debug("Moved %s to %s", filename, destination_path)
-
-    #     else:
-    #         logging.debug(
-    #             "Folder %s does not contain a 'cropped' directory, skipping.",
-    #             folder_name,
-    #         )
-    return positive_dir, negative_dir
-
-
-# def separate_images_binary(source_folder, positive_folder, negative_folder, keyword):
-#     os.makedirs(positive_folder, exist_ok=True)
-#     os.makedirs(negative_folder, exist_ok=True)
-
-#     positive_keywords = ["happy", "fun", "calm", "joy"]
-#     negative_keywords = ["anger", "sad", "fear"]
-
-#     for folder_name in os.listdir(source_folder):
-#         source_path = os.path.join(source_folder, folder_name)
-
-#         #Checking if cropped directory exists
-#         for folder_name in os.listdir(source_folder):
-#             source_path = os.path.join(source_folder, folder_name)
-#             cropped_folder_path = os.path.join(source_path, "cropped")
-
-#         if os.path.exists(cropped_folder_path) and os.path.isdir(cropped_folder_path):
-#             # Check if the folder name contains positive or negative keywords
-#             if any(keyword in folder_name for keyword in positive_keywords):
-#                 destination_path = os.path.join(positive_folder, folder_name)
-#             elif any(keyword in folder_name for keyword in negative_keywords):
-#                 destination_path = os.path.join(negative_folder, folder_name)
-#             else:
-#                 print(f"Folder {folder_name} does not match positive or negative criteria, skipping.")
-#                 continue
-
-#             # Move all files from the source folder to the appropriate destination folder
-#             files = os.listdir(source_path)
-#             for filename in files:
-#                 source_file_path = os.path.join(source_path, filename)
-#                 destination_file_path = os.path.join(destination_path, filename)
-#                 shutil.move(source_file_path, destination_file_path)
-#                 print(f"Moved {filename} to {destination_path}")
-
-#         else:
-#             print(f"Folder {folder_name} does not contain a 'cropped' directory, skipping.")
-
-# # Example usage:
-# #source_folder = "/data"
-# #positive_folder = "/data/baseline/positive"
-# #negative_folder = "/data/baseline/negative"
-# #keyword = "positive"
-
-# #separate_images_binary(source_folder, positive_folder, negative_folder, keyword)
-
-
-######### MULTICLASS SEPERATOR ###############
-def separate_images_multiple(source_folder, output_folders, keywords):
-    for folder in output_folders:
-        os.makedirs(folder, exist_ok=True)
-
-    for folder_name in os.listdir(source_folder):
-        source_path = os.path.join(source_folder, folder_name)
-
-        # check if there is a cropped folder, if not then throw an error
-        # if there is a cropped, copy all images from cropped into correct emotion folder
-        cropped_folder_path = os.path.join(source_path, "cropped")
-        if os.path.exists(cropped_folder_path) and os.path.isdir(cropped_folder_path):
-
-            # Check if the foldername contains any of the keywords
-            for keyword, destination_folder in zip(keywords, output_folders):
-                if keyword in folder_name:
-                    files = os.listdir(source_path)
-                    for filename in files:
-                        source_file_path = os.path.join(source_path, filename)
-                        destination_path = os.path.join(destination_folder, filename)
-                        # Move the file to the appropriate folder
-                        shutil.move(source_file_path, destination_path)
-                        print(f"Moved {filename} to {destination_folder}")
-                    break  # Move to the next file
-
-        else:
-            print(
-                f"Folder {folder_name} does not contain a 'cropped' directory, skipping."
+#################### MULTICLASS SEPARATOR ######################
+def separate_images_multiple(source_dirs, output_dir):
+    """
+    Takes in a list of source folders and separates the images into folders for each emotion.
+    Each source folder should contain a 'cropped' directory with the images to be copied.
+    """
+    for source_dir in source_dirs:
+        if not os.path.exists(source_dir):
+            raise FileNotFoundError(
+                "Source folder {} does not exist".format(source_dir)
             )
 
+    emotions = ["happy", "fun", "calm", "joy", "anger", "sad", "fear"]
 
-# This is where the source folder is
-# /data/1_cs_joy/cropped
-# So check if folder name has the keyword
+    destination_paths = []
+    for source_dir in source_dirs:
+        logging.debug("Source folder: %s", source_dir)
 
-# source_folder = "/data"
-# output_folders = [
-#     "/data/baseline/anger",
-#     "/data/baseline/sad",
-#     "/data/baseline/fear",
-#     "/data/baseline/happy",
-#     "/data/baseline/fun",
-#     "/data/baseline/calm"
-#     "/data/baseline/joy"
-# ]
-# keywords = ["anger", "sad", "fear", "happy", "fun", "calm", "joy"]
+        # make sure the source folder contains 'cropped' in its subdirectories
+        if "cropped" not in os.listdir(source_dir):
+            raise FileNotFoundError(
+                "Source folder does not contain a 'cropped' directory, skipping."
+            )
 
-# separate_images_multiple(source_folder, output_folders, keywords)
+        crop_dir = os.path.join(source_dir, "cropped")
+
+        # Initialize variable to store matched emotion
+        matched_emotion = None
+
+        # Check if the source folder name contains an emotion keyword
+        for emotion in emotions:
+            if emotion in str(source_dir):
+                matched_emotion = emotion
+                break
+
+        if matched_emotion:
+            destination_path = Path(output_dir) / matched_emotion
+            destination_paths.append(destination_path)
+            logging.debug("Keyword matched: %s", matched_emotion)
+        else:
+            logging.debug(
+                "Folder %s does not match any emotion, skipping.",
+                source_dir,
+            )
+
+        # Move all files from the cropped folder to the appropriate destination folder
+        files = os.listdir(crop_dir)
+        for filename in files:
+            source_file_path = os.path.join(crop_dir, filename)
+            if not os.path.exists(destination_path):
+                os.makedirs(destination_path, exist_ok=True)
+            destination_file_path = os.path.join(destination_path, filename)
+            shutil.copy(source_file_path, destination_file_path)
+            logging.debug("Moved %s to %s", filename, destination_path)
+
+    return destination_paths
