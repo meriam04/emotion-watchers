@@ -35,14 +35,18 @@ if __name__ == "__main__":
 # All negative emotions and positive emotions have to be mapped
 
 
-############## BINARY SEPARATOR #############
-def separate_images_binary(source_folder, output_dir, keyword):
+#################### BINARY SEPARATOR ######################
+def separate_images_binary(source_dirs, output_dir):
     """
-    Takes in a source folder and separates the images into positive and negative folders based on the keyword.
-    The keyword is used to determine if the image is positive or negative.
+    Takes in a source folder and separates the images into positive and negative folders
+    based on the emotion keyword in the source folder name.
+    Source folder should contain a 'cropped' directory with the images to be copied.
     """
-    if not os.path.exists(source_folder):
-        raise FileNotFoundError("Source folder does not exist")
+    for source_dir in source_dirs:
+        if not os.path.exists(source_dir):
+            raise FileNotFoundError(
+                "Source folder {} does not exist".format(source_dir)
+            )
 
     positive_dir = Path(output_dir) / "positive"
     negative_dir = Path(output_dir) / "negative"
@@ -55,44 +59,77 @@ def separate_images_binary(source_folder, output_dir, keyword):
     positive_keywords = ["happy", "fun", "calm", "joy"]
     negative_keywords = ["anger", "sad", "fear"]
 
-    logging.debug("Source folder: %s", source_folder)
-    for folder_name in os.listdir(source_folder):
-        logging.debug("Subfolder: %s", folder_name)
-        source_path = os.path.join(source_folder, folder_name)
+    for source_dir in source_dirs:
+        logging.debug("Source folder: %s", source_dir)
 
-        # Check if the folder name contains "cropped"
-        if os.path.isdir(source_path) and "cropped" in os.listdir(source_path):
-            cropped_folder_path = os.path.join(source_path, "cropped")
+        # make sure the source folder contains 'cropped' in its subdirectories
+        if "cropped" not in os.listdir(source_dir):
+            raise FileNotFoundError(
+                "Source folder does not contain a 'cropped' directory, skipping."
+            )
 
-            logging.debug("Cropped folder path: %s", cropped_folder_path)
-            # Check if the folder name contains positive or negative keywords
+        crop_dir = os.path.join(source_dir, "cropped")
 
-            if any(keyword in folder_name for keyword in positive_keywords):
-                destination_path = positive_dir
-                logging.debug("Keyword matched: Positive")
-            elif any(keyword in folder_name for keyword in negative_keywords):
-                destination_path = negative_dir
-                logging.debug("Keyword matched: Negative")
-            else:
-                logging.debug(
-                    "Folder %s does not match positive or negative criteria, skipping.",
-                    folder_name,
-                )
-                continue
-
-            # Move all files from the cropped folder to the appropriate destination folder
-            files = os.listdir(cropped_folder_path)
-            for filename in files:
-                source_file_path = os.path.join(cropped_folder_path, filename)
-                destination_file_path = os.path.join(destination_path, filename)
-                shutil.move(source_file_path, destination_file_path)
-                logging.debug("Moved %s to %s", filename, destination_path)
-
+        # check if the source folder name contains an emotion keyword
+        if any(keyword in str(source_dir) for keyword in positive_keywords):
+            destination_path = positive_dir
+            logging.debug("Keyword matched: Positive")
+        elif any(keyword in str(source_dir) for keyword in negative_keywords):
+            destination_path = negative_dir
+            logging.debug("Keyword matched: Negative")
         else:
             logging.debug(
-                "Folder %s does not contain a 'cropped' directory, skipping.",
-                folder_name,
+                "Folder %s does not match positive or negative criteria, skipping.",
+                source_dir,
             )
+
+        # Move all files from the cropped folder to the appropriate destination folder
+        files = os.listdir(crop_dir)
+        for filename in files:
+            source_file_path = os.path.join(crop_dir, filename)
+            destination_file_path = os.path.join(destination_path, filename)
+            shutil.copy(source_file_path, destination_file_path)
+            logging.debug("Moved %s to %s", filename, destination_path)
+
+    return positive_dir, negative_dir
+
+    # for folder_name in os.listdir(source_dir):
+    #     logging.debug("Subfolder: %s", folder_name)
+    #     source_path = os.path.join(source_dir, folder_name)
+
+    #     # Check if the folder name contains "cropped"
+    #     if os.path.isdir(source_path) and "cropped" in os.listdir(source_path):
+    #         cropped_folder_path = os.path.join(source_path, "cropped")
+
+    #         logging.debug("Cropped folder path: %s", cropped_folder_path)
+    #         # Check if the folder name contains positive or negative keywords
+
+    #         if any(keyword in folder_name for keyword in positive_keywords):
+    #             destination_path = positive_dir
+    #             logging.debug("Keyword matched: Positive")
+    #         elif any(keyword in folder_name for keyword in negative_keywords):
+    #             destination_path = negative_dir
+    #             logging.debug("Keyword matched: Negative")
+    #         else:
+    #             logging.debug(
+    #                 "Folder %s does not match positive or negative criteria, skipping.",
+    #                 folder_name,
+    #             )
+    #             continue
+
+    #         # Move all files from the cropped folder to the appropriate destination folder
+    #         files = os.listdir(cropped_folder_path)
+    #         for filename in files:
+    #             source_file_path = os.path.join(cropped_folder_path, filename)
+    #             destination_file_path = os.path.join(destination_path, filename)
+    #             shutil.move(source_file_path, destination_file_path)
+    #             logging.debug("Moved %s to %s", filename, destination_path)
+
+    #     else:
+    #         logging.debug(
+    #             "Folder %s does not contain a 'cropped' directory, skipping.",
+    #             folder_name,
+    #         )
     return positive_dir, negative_dir
 
 

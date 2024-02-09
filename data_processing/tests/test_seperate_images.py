@@ -6,7 +6,7 @@ from ..data_processing import separate_images_binary, separate_images_multiple
 from ..crop_and_resize_images import crop_and_resize_image, crop_and_resize_images
 from ..utils import Point, Region, Resolution
 
-test_files_dir = Path(__file__).parent / "test_files"
+test_files_dir = Path(__file__).parent / "test_files" / "separate_images"
 
 
 @pytest.fixture(autouse=True)
@@ -15,77 +15,79 @@ def set_logging_level(caplog):
     caplog.set_level(logging.DEBUG)
 
 
-@pytest.fixture
-def setup_folders(tmp_path):
-    source_folder = test_files_dir / "cropped"
-    positive_folder = tmp_path / "positive"
-    negative_folder = tmp_path / "negative"
-    output_folders = [
-        tmp_path / "anger",
-        tmp_path / "sad",
-        tmp_path / "fear",
-        tmp_path / "happy",
-        tmp_path / "fun",
-        tmp_path / "calm",
-        tmp_path / "joy",
-    ]
-    keywords = ["anger", "sad", "fear", "happy", "fun", "calm", "joy"]
-
-    os.makedirs(source_folder, exist_ok=True)
-    os.makedirs(positive_folder, exist_ok=True)
-    os.makedirs(negative_folder, exist_ok=True)
-    for folder in output_folders:
-        os.makedirs(folder, exist_ok=True)
-
-    # Create some dummy data
-    # dummy_data = [
-    # ("happy_video", ["happy_frame1.jpg", "happy_frame2.jpg"]),
-    # ("sad_video", ["sad_frame1.jpg", "sad_frame2.jpg"]),
-    # Add more dummy data as needed
-    # ]
-
-    # for video, frames in dummy_data:
-    #     video_folder = source_folder / video
-    #     os.makedirs(video_folder, exist_ok=True)
-    #     for frame in frames:
-    #         open(video_folder / frame, 'a').close()
-
-    # return source_folder, positive_folder, negative_folder, output_folders, keywords
+def setup_test_folders(setup_folders):
+    """
+    Create test directories and populate them with dummy image values.
+    """
+    for folder in setup_folders:
+        os.makedirs(folder / "cropped", exist_ok=True)
+        emotion_name = folder.stem.split("_")[
+            1
+        ]  # Extract emotion name from folder name
+        # Create dummy image files with emotion name
+        for i in range(5):
+            with open(folder / f"cropped/image_{i}_{emotion_name}.jpg", "w") as f:
+                f.write("Dummy image data")
 
 
 @pytest.mark.parametrize(
-    "setup_folders, output_folders, keywords",
-    [([test_files_dir, test_files_dir, "positive"])],
+    "setup_folders, output_folders",
+    [
+        (
+            [
+                test_files_dir / "test_happy",
+                test_files_dir / "test_sad",
+                test_files_dir / "test_fear",
+                test_files_dir / "test_anger",
+                test_files_dir / "test_fun",
+                test_files_dir / "test_calm",
+                test_files_dir / "test_joy",
+            ],
+            test_files_dir,
+        ),
+    ],
 )
-def test_separate_images_binary(setup_folders, output_folders, keywords, caplog):
+def test_separate_images_binary(setup_folders, output_folders, caplog):
+
+    # Call the setup_test_folders function to prepare test directories
+    setup_test_folders(setup_folders)
 
     # Set logging level to capture debug messages
     caplog.set_level(logging.DEBUG)
 
-    # Make these the parameters.
-    # source_folder, positive_folder, negative_folder, _, _ = setup_folders
-    keywords = "positive"
-    positive_dir, negative_dir = separate_images_binary(
-        setup_folders, output_folders, keywords
-    )
+    positive_dir, negative_dir = separate_images_binary(setup_folders, output_folders)
 
     # Assert that files are moved correctly to positive and negative folders
     assert positive_dir.exists() and positive_dir.is_dir()
     assert negative_dir.exists() and negative_dir.is_dir()
 
-    assert True is False
+    # Ensure the files were correctly moved
+    assert len(os.listdir(positive_dir)) > 0
+    assert len(os.listdir(negative_dir)) > 0
 
-    # Assert that files are moved correctly to positive and negative folders
-    # assert len(os.listdir(positive_folder)) > 0
-    # assert len(os.listdir(negative_folder)) > 0
+    # Ensure the files weren't deleted from source folders
+    for folder in setup_folders:
+        assert len(os.listdir(folder / "cropped")) > 0
 
-    # os.makedirs(source_folder, exist_ok=True)
-    # os.makedirs(positive_folder, exist_ok=True)
-    # os.makedirs(negative_folder, exist_ok=True)
-    # for folder in output_folders:
-    #     os.makedirs(folder, exist_ok=True)
+    # Ensure that all files were moved to the correct folders
+    positive_keywords = ["happy", "fun", "calm", "joy"]
+    negative_keywords = ["anger", "sad", "fear"]
 
-    # return source_folder, positive_folder, negative_folder, output_folders, keywords
+    for folder in setup_folders:
+        for file in os.listdir(folder / "cropped"):
+            if any(keyword in file for keyword in positive_keywords):
+                assert (positive_dir / file).exists()
+            elif any(keyword in file for keyword in negative_keywords):
+                assert (negative_dir / file).exists()
+            else:
+                assert False, f"File {file} was not moved to the correct folder."
+
+    # Ensure that positive folder contains no negative keyword images
+    for file in os.listdir(positive_dir):
+        assert not any(keyword in file for keyword in negative_keywords)
+
+    for file in os.listdir(negative_dir):
+        assert not any(keyword in file for keyword in positive_keywords)
 
 
 # def test_separate_images_multiple(setup_folders):
