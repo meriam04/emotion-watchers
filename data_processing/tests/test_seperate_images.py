@@ -130,3 +130,27 @@ def test_separate_images_multiple(setup_folders, output_folders, caplog):
         emotion_name = folder.stem.split("_")[1]
         for file in os.listdir(folder / "cropped"):
             assert emotion_name in file
+
+
+# Test cases where folder doesn't exist
+@pytest.mark.parametrize(
+    "setup_folders, output_folders",
+    [
+        (
+            [
+                test_files_dir / "fake",
+            ],
+            test_files_dir,
+        ),
+    ],
+)
+def test_separate_fake_dir(setup_folders, output_folders, caplog):
+    # Set logging level to capture debug messages
+    caplog.set_level(logging.DEBUG)
+
+    logging.debug("Running separate fake dir test")
+
+    with pytest.raises(FileNotFoundError) as e:
+        separate_images_binary(source_dirs=setup_folders, output_dir=output_folders)
+
+    assert str(e.value) == "Source folder {} does not exist".format(setup_folders[0])
