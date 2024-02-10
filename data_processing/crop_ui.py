@@ -49,8 +49,27 @@ class ImageCropper:
     def on_mouse_drag(self, event):
         self.end_x = event.x
         self.end_y = event.y
+
+        # Calculate width and height of the selection
+        width = abs(self.end_x - self.start_x)
+        height = abs(self.end_y - self.start_y)
+
+        # Ensure selection area is a square
+        if width > height:
+            if self.end_x < self.start_x:
+                self.end_x = self.start_x - height
+            else:
+                self.end_x = self.start_x + height
+        else:
+            if self.end_y < self.start_y:
+                self.end_y = self.start_y - width
+            else:
+                self.end_y = self.start_y + width
+
+        # Redraw the crop rectangle
         self.canvas.delete("crop_rect")
         self.canvas.create_rectangle(self.start_x, self.start_y, self.end_x, self.end_y, outline="red", tags="crop_rect")
+
 
     def crop_image(self):
         try:
@@ -62,10 +81,17 @@ class ImageCropper:
             with open(crop_coordinates_file, 'a') as f:
                 f.write(f"{os.path.basename(self.image_path)} {crop_box}\n")
 
-            # Save the cropped image
-            cropped_img.save(os.path.join(os.path.dirname(self.image_path), f"cropped_{os.path.basename(self.image_path)}"))
+            # Create a "cropped" folder if it doesn't exist
+            cropped_folder = os.path.join(os.path.dirname(self.image_path), 'cropped')
+            if not os.path.exists(cropped_folder):
+                os.makedirs(cropped_folder)
+
+            # Save the cropped image in the "cropped" folder
+            cropped_img.save(os.path.join(cropped_folder, f"{os.path.basename(self.image_path).split('.')[0]}_c.{os.path.basename(self.image_path).split('.')[-1]}"))
         except Exception as e:
             print(f"Error cropping image: {e}")
+
+
 
     def crop_all_images(self):
         folder_path = os.path.dirname(self.image_path)
