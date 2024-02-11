@@ -1,0 +1,13 @@
+setup.py
+ew_data_processing.egg-info/PKG-INFO
+ew_data_processing.egg-info/SOURCES.txt
+ew_data_processing.egg-info/dependency_links.txt
+ew_data_processing.egg-info/top_level.txt
+face/__init__.py
+face/crop_and_resize_images.py
+face/video_to_images.py
+face/tests/__init__.py
+face/tests/test_crop_and_resize_images.py
+face/tests/test_video_to_images.py
+pupil/__init__.py
+pupil/process_raw.py

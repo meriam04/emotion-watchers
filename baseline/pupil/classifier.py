@@ -6,10 +6,9 @@ class LSTMClassifier(nn.Module):
         super(LSTMClassifier, self).__init__()
         self.name = "LSTM Model"
         self.lstm = nn.LSTM(1, 50, 1)
-        self.fc1 = nn.Linear(50, 6)
+        self.fc1 = nn.Linear(50, 2)
 
     def forward(self, x):
         x, _ = self.lstm(x)
         x = self.fc1(x)
-        x = x.squeeze(1)
         return x

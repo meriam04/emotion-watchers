@@ -9,45 +9,96 @@ import sys
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data.sampler import SubsetRandomSampler
 from typing import Dict, List, Tuple
 
 from classifier import LSTMClassifier
 
+#temp
+import matplotlib.pyplot as plt
 
-def get_data(pkl_paths: List[Path]) -> Tuple[Dict[str, List[Tuple]]]:
+
+def get_data(pkl_paths: List[Path], batch_size=1024, lookback=1):
     # Load the dataset from the .pkl file
-    dataset = {}
+    dilations = []
+    labels = []
     classes = []
     for path in pkl_paths:
         with open(path, "rb") as f:
             data = pickle.load(f)
-            for emotion, dilations in data.items():
+            for emotion, dilation in data.items():
                 if emotion not in classes:
                     classes.append(emotion)
-                    dataset[classes.index(emotion)] = []
-                dataset[classes.index(emotion)].extend(dilations)
+                dilations.extend(dilation)
+                new_label = [0.0, 0.0]
+                new_label[classes.index(emotion)] = 1.0
+                labels.extend([new_label] * len(dilation))
+                # plt.plot(dilation)
+                # plt.savefig(Path(__file__).parent / f"{emotion}.png")
+                # plt.clf()
+    print(classes)
+
+    lookback_dilations = []
+    for i in range(lookback, len(dilations)):
+        lookback_dilations.append(dilations[i-lookback:i])
+
+    batched_dilations = []
+    batched_labels = []
+    for i in range(0, len(dilations), batch_size):
+        batched_dilations.append(lookback_dilations[i:i+batch_size])
+        batched_labels.append(labels[i:i+batch_size])
+
+    # Last batch is dropped because it may not be the correct size
+    dataset = TensorDataset(torch.tensor(batched_dilations[:-1]), torch.tensor(batched_labels[:-1]))
 
     # Split the dataset into train, val, and test sets
-    train, val, test = {}, {}, {}
-    for emotion, dilations in dataset.items():
-        train[emotion], test[emotion] = train_test_split(dilations, test_size=0.2, shuffle=False)
-        train[emotion], val[emotion] = train_test_split(train[emotion], test_size=0.2, shuffle=False)
-    return train, val, test
+    train, test = train_test_split(dataset, test_size=0.2)
+    train, val = train_test_split(train, test_size=0.2)
+
+    # Load the dataset into train_loader, val_loader, and test_loader
+    train_loader = DataLoader(
+        train, batch_size=1, num_workers=1
+    )
+    val_loader = DataLoader(
+        val, batch_size=1, num_workers=1
+    )
+    test_loader = DataLoader(
+        test, batch_size=1, num_workers=1
+    )
+
+    return train_loader, val_loader, test_loader
 
 
-def get_accuracy(model, dataset):
+def get_accuracy(model, data_loader, name, epoch):
     correct = 0
     total = 0
-    for label, dialations in dataset.items():
-        dialations_t = torch.tensor([dialations]).transpose(0, 1)
-        output = model(dialations_t)
+    #combined_preds = []
+    for dilations, labels in iter(data_loader):
+        output = model(dilations.squeeze(0))
 
         # select index with maximum prediction score
-        pred = output.max(1, keepdim=True)[1]
-        print(f"{label}, {pred}")
-        correct += pred.eq(torch.full(pred.size(), float(label))).sum().item()
-        total += len(dialations)
+        pred = output.max(1)[1]
+        #combined_preds.extend(pred)
+        #print(f"{pred.transpose(0, 1)}, {labels.squeeze(0)}")
+        correct += pred.eq(labels.max(2)[1]).sum().item()
+        total += pred.shape[0]
+
+    '''
+    combined_dilations = []
+    combined_labels = []
+    for dilations, labels in data_loader:
+        combined_dilations.extend(dilations.squeeze(0))
+        #print(dilations.squeeze(0))
+        combined_labels.extend(labels.max(2)[1])
+        #print(labels.transpose(0, 1))
+    #plt.plot(combined_dilations)
+    plt.plot(combined_labels, c='c')
+    plt.plot(combined_preds, c='r')
+    plt.savefig(Path(__file__).parent / f"{name}_{epoch}.png")
+    plt.clf()
+    '''
+
     return correct / total
 
 
@@ -58,23 +109,26 @@ def get_model_name(name, learning_rate, epoch):
     return path
 
 
-def train(model, train, val, learning_rate=0.01, num_epochs=10):
+def train(model, train_loader, val_loader, batch_size=32, learning_rate=0.01, num_epochs=10):
     # Train the model
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.MSELoss()
     optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
 
     iters, losses, train_acc, val_acc = [], [], [], []
 
     n = 0
     for epoch in range(num_epochs):
-        for label, dialations in train.items():
+        model.train()
+        for dilations, labels in iter(train_loader):
+            #print(dilations.shape)
+            #print(labels.shape)
             # Forward pass
-            dialations_t = torch.tensor([dialations]).transpose(0, 1)
-            out = model(dialations_t)
-            print(f"{out}, {torch.tensor([dialations]).transpose(0, 1)}")
+            out = model(dilations.squeeze(0))
+            #print(out.shape)
+            #print()
 
             # Compute the total loss
-            loss = criterion(out, torch.full(dialations_t.size(), float(label)))
+            loss = criterion(out, labels.squeeze(0))
             # Backward pass
             loss.backward()
             # Make the updates
@@ -82,13 +136,14 @@ def train(model, train, val, learning_rate=0.01, num_epochs=10):
             # Clean up
             optimizer.zero_grad()
 
-            normalized_loss = float(loss) / len(dialations)
+            #print(f"train: {get_accuracy(model, train_loader)}, val: {get_accuracy(model, val_loader)}")
         
+        model.eval()
         # Save the training/validation loss/accuracy
         iters.append(n)
-        losses.append(normalized_loss)
-        train_acc.append(get_accuracy(model, train))
-        val_acc.append(get_accuracy(model, val))
+        losses.append(float(loss) / batch_size)
+        train_acc.append(get_accuracy(model, train_loader, "train", epoch))
+        val_acc.append(get_accuracy(model, val_loader, "val", epoch))
         n += 1
         print(
             ("Epoch {}: Train acc: {}, Train loss: {} |" + "Validation acc: {}").format(
@@ -109,8 +164,8 @@ if __name__ == "__main__":
         if Path(file).suffix == ".pkl":
             pkl_paths.append(Path(sys.argv[1]) / file)
 
-    train_set, val_set, _ = get_data(pkl_paths)
+    train_loader, val_loader, _ = get_data(pkl_paths)
 
     model = LSTMClassifier()
 
-    train(model, train_set, val_set, learning_rate=0.5, num_epochs=10)
+    train(model, train_loader, val_loader, learning_rate=0.005, num_epochs=2000)
