@@ -3,9 +3,9 @@ from tkinter import Tk, Canvas, Button, filedialog
 from PIL import Image, ImageTk
 
 
-#"Crop All" crops all the pictures in the folder
-#Prefixes the cropped pictures with "cropped_"
-#creates a .txt file with all the coordinates of the pictures
+# "Crop All" crops all the pictures in the folder
+# Prefixes the cropped pictures with "cropped_"
+# creates a .txt file with all the coordinates of the pictures
 class ImageCropper:
     def __init__(self, master, image_path):
         self.master = master
@@ -24,7 +24,9 @@ class ImageCropper:
         self.crop_button = Button(master, text="Crop", command=self.crop_image)
         self.crop_button.pack()
 
-        self.crop_all_button = Button(master, text="Crop All", command=self.crop_all_images)
+        self.crop_all_button = Button(
+            master, text="Crop All", command=self.crop_all_images
+        )
         self.crop_all_button.pack()
 
         # Load the selected image
@@ -68,46 +70,74 @@ class ImageCropper:
 
         # Redraw the crop rectangle
         self.canvas.delete("crop_rect")
-        self.canvas.create_rectangle(self.start_x, self.start_y, self.end_x, self.end_y, outline="red", tags="crop_rect")
-
+        self.canvas.create_rectangle(
+            self.start_x,
+            self.start_y,
+            self.end_x,
+            self.end_y,
+            outline="red",
+            tags="crop_rect",
+        )
 
     def crop_image(self):
         try:
-            crop_box = (min(self.start_x, self.end_x), min(self.start_y, self.end_y), max(self.start_x, self.end_x), max(self.start_y, self.end_y))
+            crop_box = (
+                min(self.start_x, self.end_x),
+                min(self.start_y, self.end_y),
+                max(self.start_x, self.end_x),
+                max(self.start_y, self.end_y),
+            )
             cropped_img = self.img.crop(crop_box)
 
             # Save the crop coordinates
-            crop_coordinates_file = os.path.join(os.path.dirname(self.image_path), 'crop_coordinates.txt')
-            with open(crop_coordinates_file, 'a') as f:
+            crop_coordinates_file = os.path.join(
+                os.path.dirname(self.image_path), "crop_coordinates.txt"
+            )
+            with open(crop_coordinates_file, "a") as f:
                 f.write(f"{os.path.basename(self.image_path)} {crop_box}\n")
 
             # Create a "cropped" folder if it doesn't exist
-            cropped_folder = os.path.join(os.path.dirname(self.image_path), 'cropped')
+            cropped_folder = os.path.join(os.path.dirname(self.image_path), "cropped")
             if not os.path.exists(cropped_folder):
                 os.makedirs(cropped_folder)
 
             # Save the cropped image in the "cropped" folder
-            cropped_img.save(os.path.join(cropped_folder, f"{os.path.basename(self.image_path).split('.')[0]}_c.{os.path.basename(self.image_path).split('.')[-1]}"))
+            cropped_img.save(
+                os.path.join(
+                    cropped_folder,
+                    f"{os.path.basename(self.image_path).split('.')[0]}_c.{os.path.basename(self.image_path).split('.')[-1]}",
+                )
+            )
         except Exception as e:
             print(f"Error cropping image: {e}")
-
-
 
     def crop_all_images(self):
         folder_path = os.path.dirname(self.image_path)
         for filename in os.listdir(folder_path):
-            if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
+            if filename.lower().endswith((".png", ".jpg", ".jpeg", ".gif")):
                 image_path = os.path.join(folder_path, filename)
                 self.image_path = image_path
                 self.load_image()
                 self.crop_image()
 
+
 if __name__ == "__main__":
     root = Tk()
     root.title("Image Cropper")
 
+    # Specify file types for image files
+    file_types = [
+        ("PNG files", "*.png"),
+        ("JPEG files", "*.jpeg"),
+        ("JPG files", "*.jpg"),
+        ("GIF files", "*.gif"),
+        ("All files", "*.*"),  # Optionally, include option for all files
+    ]
+
     # Ask user to select an image file
-    image_path = filedialog.askopenfilename(title="Select Image File")
+    image_path = filedialog.askopenfilename(
+        title="Select Image File", filetypes=file_types
+    )
 
     if image_path:
         cropper = ImageCropper(root, image_path)
