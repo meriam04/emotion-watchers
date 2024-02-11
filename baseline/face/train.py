@@ -3,7 +3,8 @@
 import numpy as np
 import os
 from pathlib import Path
-import sys
+import pickle
+import re
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -12,10 +13,28 @@ from torch.utils.data.sampler import SubsetRandomSampler
 import torchvision
 import torchvision.transforms as transforms
 
-from classifier import BinaryClassifier, MulticlassClassifier
+from .classifier import BinaryClassifier, MulticlassClassifier
+
+BASELINE_DATA_DIR = Path(__file__).parent.parent / "data/baseline"
+TEST_SET_PATH = Path(__file__).parent / "test_set.pkl"
 
 
-def get_data(data_dir, batch_size=32):
+def get_individual_sets(samples, test_indices):
+    individual_sets = {}
+    for test_idx in test_indices:
+        # Expects files of the format:
+        # <emotion_id>_<initial>_<emotion_name>_<second_in_video>_c.png
+        # Example: 1_cs_joy_1.0_c.png
+        individual = re.search(
+            ".*\d_(?P<individual>\w+)_\w+_\d+\.\d+_c\.png", samples[test_idx][0]
+        )["individual"]
+        if individual not in individual_sets:
+            individual_sets[individual] = []
+        individual_sets[individual].append(test_idx)
+    return individual_sets
+
+
+def get_data(data_dir, test_indices=None, save_test_indices=False, batch_size=32):
     # Transform the images to tensors of normalized range [-1, 1]
     transform = transforms.Compose(
         [transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
@@ -121,7 +140,7 @@ def train(
 
 if __name__ == "__main__":
     np.random.seed(496)
-    train_loader, val_loader, _, _ = get_data(Path(sys.argv[1]))
+    train_loader, val_loader, _, _ = get_data(BASELINE_DATA_DIR, save_test_indices=True)
 
     model = BinaryClassifier()
 

@@ -9,8 +9,8 @@ from utils import Point, Region, Resolution
 from face.video_to_images import extract_frames
 
 RATE = 1
-TOP_LEFT = Point(380, 70)
-BOTTOM_RIGHT = Point(810, 500)
+TOP_LEFT = Point(430, 80)
+BOTTOM_RIGHT = Point(930, 580)
 RESOLUTION = Resolution(224, 224)
 
 
