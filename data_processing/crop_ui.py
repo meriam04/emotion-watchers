@@ -3,21 +3,17 @@ from tkinter import Tk, Canvas, Button, filedialog
 from PIL import Image, ImageTk
 
 
-# "Crop All" crops all the pictures in the folder
-# Prefixes the cropped pictures with "cropped_"
-# creates a .txt file with all the coordinates of the pictures
 class ImageCropper:
     def __init__(self, master, image_path):
         self.master = master
         self.image_path = image_path
         self.img = None
-        self.tk_img = None  # Keep a reference to the PhotoImage
+        self.tk_img = None
         self.start_x = 0
         self.start_y = 0
         self.end_x = 0
         self.end_y = 0
 
-        # Create GUI components
         self.canvas = Canvas(master)
         self.canvas.pack()
 
@@ -29,10 +25,8 @@ class ImageCropper:
         )
         self.crop_all_button.pack()
 
-        # Load the selected image
         self.load_image()
 
-        # Bind events
         self.canvas.bind("<ButtonPress-1>", self.on_mouse_click)
         self.canvas.bind("<B1-Motion>", self.on_mouse_drag)
 
@@ -40,7 +34,6 @@ class ImageCropper:
         self.img = Image.open(self.image_path)
         self.tk_img = ImageTk.PhotoImage(self.img)
 
-        # Set canvas size to match the image size
         self.canvas.config(width=self.img.width, height=self.img.height)
         self.canvas.create_image(0, 0, anchor="nw", image=self.tk_img)
 
@@ -52,11 +45,9 @@ class ImageCropper:
         self.end_x = event.x
         self.end_y = event.y
 
-        # Calculate width and height of the selection
         width = abs(self.end_x - self.start_x)
         height = abs(self.end_y - self.start_y)
 
-        # Ensure selection area is a square
         if width > height:
             if self.end_x < self.start_x:
                 self.end_x = self.start_x - height
@@ -68,7 +59,6 @@ class ImageCropper:
             else:
                 self.end_y = self.start_y + width
 
-        # Redraw the crop rectangle
         self.canvas.delete("crop_rect")
         self.canvas.create_rectangle(
             self.start_x,
@@ -89,19 +79,16 @@ class ImageCropper:
             )
             cropped_img = self.img.crop(crop_box)
 
-            # Save the crop coordinates
             crop_coordinates_file = os.path.join(
                 os.path.dirname(self.image_path), "crop_coordinates.txt"
             )
             with open(crop_coordinates_file, "a") as f:
                 f.write(f"{os.path.basename(self.image_path)} {crop_box}\n")
 
-            # Create a "cropped" folder if it doesn't exist
             cropped_folder = os.path.join(os.path.dirname(self.image_path), "cropped")
             if not os.path.exists(cropped_folder):
                 os.makedirs(cropped_folder)
 
-            # Save the cropped image in the "cropped" folder
             cropped_img.save(
                 os.path.join(
                     cropped_folder,
@@ -121,20 +108,18 @@ class ImageCropper:
                 self.crop_image()
 
 
-if __name__ == "__main__":
+def run_image_cropper():
     root = Tk()
     root.title("Image Cropper")
 
-    # Specify file types for image files
     file_types = [
         ("PNG files", "*.png"),
         ("JPEG files", "*.jpeg"),
         ("JPG files", "*.jpg"),
         ("GIF files", "*.gif"),
-        ("All files", "*.*"),  # Optionally, include option for all files
+        ("All files", "*.*"),
     ]
 
-    # Ask user to select an image file
     image_path = filedialog.askopenfilename(
         title="Select Image File", filetypes=file_types
     )
@@ -142,3 +127,7 @@ if __name__ == "__main__":
     if image_path:
         cropper = ImageCropper(root, image_path)
         root.mainloop()
+
+
+if __name__ == "__main__":
+    run_image_cropper()
