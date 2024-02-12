@@ -1,5 +1,5 @@
 import os
-from tkinter import Tk, Canvas, Button, filedialog
+from tkinter import Tk, Canvas, Button, filedialog, Scrollbar, Frame
 from PIL import Image, ImageTk
 
 
@@ -15,7 +15,11 @@ class ImageCropper:
         self.end_y = 0
 
         self.canvas = Canvas(master)
-        self.canvas.pack()
+        self.canvas.pack(side="left", fill="both", expand=True)
+
+        self.scrollbar = Scrollbar(master, orient="vertical", command=self.canvas.yview)
+        self.scrollbar.pack(side="right", fill="y")
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
 
         self.crop_button = Button(master, text="Crop", command=self.crop_image)
         self.crop_button.pack()
@@ -34,16 +38,16 @@ class ImageCropper:
         self.img = Image.open(self.image_path)
         self.tk_img = ImageTk.PhotoImage(self.img)
 
-        self.canvas.config(width=self.img.width, height=self.img.height)
         self.canvas.create_image(0, 0, anchor="nw", image=self.tk_img)
+        self.canvas.config(scrollregion=self.canvas.bbox("all"))
 
     def on_mouse_click(self, event):
-        self.start_x = event.x
-        self.start_y = event.y
+        self.start_x = self.canvas.canvasx(event.x)
+        self.start_y = self.canvas.canvasy(event.y)
 
     def on_mouse_drag(self, event):
-        self.end_x = event.x
-        self.end_y = event.y
+        self.end_x = self.canvas.canvasx(event.x)
+        self.end_y = self.canvas.canvasy(event.y)
 
         width = abs(self.end_x - self.start_x)
         height = abs(self.end_y - self.start_y)
@@ -109,9 +113,6 @@ class ImageCropper:
 
 
 def run_image_cropper():
-    root = Tk()
-    root.title("Image Cropper")
-
     file_types = [
         ("PNG files", "*.png"),
         ("JPEG files", "*.jpeg"),
@@ -125,6 +126,13 @@ def run_image_cropper():
     )
 
     if image_path:
+        img = Image.open(image_path)
+        width, height = img.size
+
+        root = Tk()
+        root.title("Image Cropper")
+        root.geometry(f"{width}x{height}")
+
         cropper = ImageCropper(root, image_path)
         root.mainloop()
 
