@@ -1,5 +1,5 @@
 import os
-from tkinter import Tk, Canvas, Button, filedialog, Scrollbar, Frame
+from tkinter import Tk, Canvas, Button, filedialog, Scrollbar, Toplevel, Label
 from PIL import Image, ImageTk
 
 
@@ -13,6 +13,9 @@ class ImageCropper:
         self.start_y = 0
         self.end_x = 0
         self.end_y = 0
+        self.images_cropped = 0
+        self.total_images = 1
+        self.showed_success_message = False
 
         self.canvas = Canvas(master)
         self.canvas.pack(side="left", fill="both", expand=True)
@@ -99,17 +102,50 @@ class ImageCropper:
                     f"{os.path.basename(self.image_path).split('.')[0]}_c.{os.path.basename(self.image_path).split('.')[-1]}",
                 )
             )
+
+            # Increment the count of images cropped
+            self.images_cropped += 1
+
+            # Close the main dialog window after all images are cropped
+            if self.images_cropped == self.total_images:
+                self.show_success_message()
+
         except Exception as e:
             print(f"Error cropping image: {e}")
 
     def crop_all_images(self):
-        folder_path = os.path.dirname(self.image_path)
-        for filename in os.listdir(folder_path):
-            if filename.lower().endswith((".png", ".jpg", ".jpeg", ".gif")):
-                image_path = os.path.join(folder_path, filename)
-                self.image_path = image_path
-                self.load_image()
-                self.crop_image()
+        try:
+            folder_path = os.path.dirname(self.image_path)
+            image_files = [
+                filename
+                for filename in os.listdir(folder_path)
+                if filename.lower().endswith((".png", ".jpg", ".jpeg", ".gif"))
+            ]
+            self.total_images = len(image_files)
+
+            for filename in os.listdir(folder_path):
+                if filename.lower().endswith((".png", ".jpg", ".jpeg", ".gif")):
+                    image_path = os.path.join(folder_path, filename)
+                    self.image_path = image_path
+                    self.load_image()
+                    self.crop_image()
+
+            # Show success message when done
+            if self.images_cropped == self.total_images:
+                self.show_success_message()
+        except Exception as e:
+            print(f"Error cropping images: {e}")
+
+    def show_success_message(self):
+        if self.showed_success_message:
+            return
+        success_dialog = Toplevel(self.master)
+        success_dialog.title("Success")
+        Label(
+            success_dialog, text=f"{self.images_cropped} images cropped successfully!"
+        ).pack()
+        Button(success_dialog, text="OK", command=self.master.destroy).pack()
+        self.showed_success_message = True
 
 
 def run_image_cropper():
