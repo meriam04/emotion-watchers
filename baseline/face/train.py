@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import numpy as np
 import os
 from pathlib import Path
@@ -6,6 +8,7 @@ import re
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 import torchvision
 import torchvision.transforms as transforms
@@ -54,26 +57,19 @@ def get_data(data_dir, test_indices=None, save_test_indices=False, batch_size=32
     # Split the indices and load the dataset using the split indices into train_loader, val_loader, and test_loader
     train_indices = indices[:train_val_split]
     train_sampler = SubsetRandomSampler(train_indices)
-    train_loader = torch.utils.data.DataLoader(
+    train_loader = DataLoader(
         dataset, batch_size=batch_size, num_workers=1, sampler=train_sampler
     )
     val_indices = indices[train_val_split:val_test_split]
     val_sampler = SubsetRandomSampler(val_indices)
-    val_loader = torch.utils.data.DataLoader(
+    val_loader = DataLoader(
         dataset, batch_size=batch_size, num_workers=1, sampler=val_sampler
     )
-
-    if not test_indices:
-        test_indices = indices[val_test_split:]
+    test_indices = indices[val_test_split:]
     test_sampler = SubsetRandomSampler(test_indices)
-    test_loader = torch.utils.data.DataLoader(
+    test_loader = DataLoader(
         dataset, batch_size=batch_size, num_workers=1, sampler=test_sampler
     )
-
-    if save_test_indices:
-        individual_sets = get_individual_sets(dataset.samples, test_indices)
-        with open(TEST_SET_PATH, "wb") as f:
-            pickle.dump(individual_sets, f)
 
     return train_loader, val_loader, test_loader, dataset.classes
 
@@ -148,4 +144,4 @@ if __name__ == "__main__":
 
     model = BinaryClassifier()
 
-    train(model, train_loader, val_loader, learning_rate=0.005, num_epochs=10)
+    train(model, train_loader, val_loader, learning_rate=0.005, num_epochs=1)

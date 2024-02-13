@@ -1,7 +1,8 @@
 venv/
 data/
-data_processing/tests/test_files/cropped
-data_processing/tests/test_files/images
+data_processing/face/tests/test_files/cropped
+data_processing/face/tests/test_files/images
 **/__pycache__
+**/*.egg-info
 *.weights
 *.pkl
