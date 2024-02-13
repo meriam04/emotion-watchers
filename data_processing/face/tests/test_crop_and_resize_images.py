@@ -1,8 +1,8 @@
 from pathlib import Path
 import pytest
 
-from ..crop_and_resize_images import crop_and_resize_image, crop_and_resize_images
-from ...utils import Point, Region, Resolution
+from face.crop_and_resize_images import crop_and_resize_image, crop_and_resize_images
+from utils import Point, Region, Resolution
 
 test_files_dir = Path(__file__).parent / "test_files"
 

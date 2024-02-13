@@ -1,7 +1,7 @@
 from pathlib import Path
 import pytest
 
-from ..video_to_images import extract_frames
+from face.video_to_images import extract_frames
 
 test_files_dir = Path(__file__).parent / "test_files"
 
