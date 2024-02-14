@@ -40,6 +40,9 @@ def get_data(csv_paths: List[Path], classes: List[str], window_size: int = 100):
         csv_paths: The list of paths to the .csv files containing the pupillometry data.
         classes: The list of classes to be used in the output layer.
         window_size: The number of data samples to be considered at a time.
+
+    Returns:
+        The training, validation and test sets.
     """
     # Load the dataset from the .csv file
     dilations_dict = {}
@@ -112,6 +115,9 @@ def create_model(num_classes: int, input_shape: Optional[Tuple[int, int]] = None
     Args:
         num_classes: The number of classes to be used in the output layer.
         input_shape: The shape of the input data.
+
+    Returns:
+        The LSTM model.
     """
     model = Sequential()
 

@@ -25,9 +25,13 @@ CHECKPOINT_PATH = Path(__file__).parent / "checkpoints/binary.ckpt"
 def get_individual_sets(samples, test_indices):
     """
     Get the indices of the samples that belong to the same individual.
+
     Args:
         samples: The list of samples.
         test_indices: The indices of the samples in the test set.
+
+    Returns:
+        A dictionary with the indices of the samples that belong to the same individual.
     """
     individual_sets = {}
     for test_idx in test_indices:
@@ -46,10 +50,14 @@ def get_individual_sets(samples, test_indices):
 def get_data(image_dir: List[Path], image_size: Tuple[int, int], batch_size: int = 32):
     """
     Get the data from the emotion directories and create the training, validation and test sets.
+
     Args:
         image_dir: The list of directories containing the images.
         image_size: The size of the images in pixels (e.g. (224, 224)).
         batch_size: The batch size to be used in the training.
+
+    Returns:
+        The training, validation and test sets.
     """
     # Generate train and val set from directory
     train_set = image_dataset_from_directory(
@@ -92,6 +100,9 @@ def create_model(num_classes: int, input_shape: Optional[Tuple[int, int, int]] =
     Args:
         num_classes: The number of classes in the output layer.
         input_shape: The shape of the input images (e.g. (224, 224)).
+
+    Returns:
+        The CNN model.
     """
     model = Sequential()
 
