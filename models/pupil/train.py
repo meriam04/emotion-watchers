@@ -8,16 +8,39 @@ import tensorflow as tf
 from tensorflow.data import Dataset
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Bidirectional, Conv1D, Dense, Dropout, Input, LSTM, Rescaling
+from tensorflow.keras.layers import (
+    Bidirectional,
+    Conv1D,
+    Dense,
+    Dropout,
+    Input,
+    LSTM,
+    Rescaling,
+)
 from typing import List, Optional, Tuple
 
 
-BINARY_CLASSES = ["positive", "negative", "negative", "positive", "negative", "positive"]
+BINARY_CLASSES = [
+    "positive",
+    "negative",
+    "negative",
+    "positive",
+    "negative",
+    "positive",
+]
 MULTICLASS_CLASSES = ["joy", "anger", "fear", "fun", "sad", "happy"]
 CHECKPOINT_PATH = Path(__file__).parent / "checkpoints/binary.ckpt"
 
 
 def get_data(csv_paths: List[Path], classes: List[str], window_size: int = 100):
+    """
+    Get the data from the .csv files and create the training, validation and test sets.
+
+    Args:
+        csv_paths: The list of paths to the .csv files containing the pupillometry data.
+        classes: The list of classes to be used in the output layer.
+        window_size: The number of data samples to be considered at a time.
+    """
     # Load the dataset from the .csv file
     dilations_dict = {}
     for c in classes:
@@ -27,11 +50,15 @@ def get_data(csv_paths: List[Path], classes: List[str], window_size: int = 100):
         with open(path, "r") as f:
             reader = csv.DictReader(f)
             for row in reader:
-                if match := re.search("(?P<id>\d+)_video_\d+\.\w+", row["processed_names"]):
-                    dilations_dict[classes[int(match["id"])-1]].append(float(row["processed_diameters"]))
+                if match := re.search(
+                    "(?P<id>\d+)_video_\d+\.\w+", row["processed_names"]
+                ):
+                    dilations_dict[classes[int(match["id"]) - 1]].append(
+                        float(row["processed_diameters"])
+                    )
 
     label = np.zeros((1, len(set(classes))))
-    
+
     dilation_windows = []
     label_windows = []
     for emotion, dilations in dilations_dict.items():
@@ -39,7 +66,7 @@ def get_data(csv_paths: List[Path], classes: List[str], window_size: int = 100):
         new_label[0][list(set(classes)).index(emotion)] = 1.0
         num_windows = int(len(dilations) // window_size)
         for i in range(num_windows):
-            dilation_windows.append(dilations[i*window_size:(i+1)*window_size])
+            dilation_windows.append(dilations[i * window_size : (i + 1) * window_size])
             label_windows.append(list(set(classes)).index(emotion))
 
     # Make a list of indices for the dataset
@@ -75,19 +102,29 @@ def get_data(csv_paths: List[Path], classes: List[str], window_size: int = 100):
 
     return train_set, val_set, test_set
 
+
 def create_model(num_classes: int, input_shape: Optional[Tuple[int, int]] = None):
+    """
+    Create the LSTM model to be used on the pupillometry data.
+    The architecture consists of 4 bidirectional LSTM layers and 2 convolutional layers,
+    with dropout applied.
+
+    Args:
+        num_classes: The number of classes to be used in the output layer.
+        input_shape: The shape of the input data.
+    """
     model = Sequential()
 
     if input_shape:
         model.add(Input(input_shape))
 
-    model.add(Rescaling(1./35))
+    model.add(Rescaling(1.0 / 35))
     model.add(Bidirectional(LSTM(16, dropout=0.2, return_sequences=True)))
-    model.add(Conv1D(32, 3, activation='selu'))
+    model.add(Conv1D(32, 3, activation="selu"))
     model.add(Dropout(0.2))
     model.add(Bidirectional(LSTM(16, dropout=0.2, return_sequences=True)))
     model.add(Bidirectional(LSTM(16, dropout=0.2, return_sequences=True)))
-    model.add(Conv1D(32, 3, activation='selu'))
+    model.add(Conv1D(32, 3, activation="selu"))
     model.add(Dropout(0.2))
     model.add(Bidirectional(LSTM(16, dropout=0.2, return_sequences=False)))
 
@@ -95,15 +132,16 @@ def create_model(num_classes: int, input_shape: Optional[Tuple[int, int]] = None
         model.add(Dense(num_classes))
         loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
     else:
-        model.add(Dense(num_classes, 'softmax'))
+        model.add(Dense(num_classes, "softmax"))
         loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-    
-    model.compile(loss=loss, optimizer='adam', metrics=['accuracy'])
+
+    model.compile(loss=loss, optimizer="adam", metrics=["accuracy"])
 
     if input_shape:
         model.summary()
 
     return model
+
 
 if __name__ == "__main__":
     # fix random seed for reproducibility
