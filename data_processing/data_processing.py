@@ -19,16 +19,13 @@ RESOLUTION = Resolution(224, 224)
 
 def data_processing(video_path: Path, output_path: Path, binary: bool) -> List[Path]:
     """Extracts frames from a video and crops and resizes them to a specified resolution."""
-    image_paths = extract_frames(video_path, RATE, output_path)
+    image_dir = video_path.parent / video_path.stem
+    image_paths = extract_frames(video_path, RATE, image_dir)
     images = crop_and_resize_images(
         image_paths, Region(TOP_LEFT, BOTTOM_RIGHT), RESOLUTION
     )
-    separate_images([output_path], output_path, binary)
+    separate_images([image_dir], output_path, binary)
     return images
-
-
-if __name__ == "__main__":
-    data_processing(Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3])
 
 
 def separate_images(source_dirs, output_dir, binary=False):
@@ -97,3 +94,7 @@ def separate_images(source_dirs, output_dir, binary=False):
             logging.debug("Moved %s to %s", filename, destination_path)
 
     return destination_paths.values()
+
+
+if __name__ == "__main__":
+    data_processing(Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3])
