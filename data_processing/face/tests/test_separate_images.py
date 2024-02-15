@@ -2,18 +2,15 @@ import os
 import pytest
 from pathlib import Path
 import logging
-from data_processing.data_processing import (
-    separate_images_binary,
-    separate_images_multiple,
-)
-from face.crop_and_resize_images import crop_and_resize_image, crop_and_resize_images
-from utils import Point, Region, Resolution
 
-test_files_dir = Path(__file__).parent / "test_files" / "separate_images"
+from data_processing.data_processing import separate_images
+
+TEST_FILES_DIR = Path(__file__).parent / "test_files" / "separate_images"
+TEAR_DOWN = True
 
 """
-General Input Directory Info: There is one large dir with all datapoints inside
-The datapoints are a particiapnt plus an emotion
+General Input Directory Info: There is one large dir with all data points inside
+The data points are a participant plus an emotion
 eg: /source_dir_cropped_images/kirti_happy.file
 
 Output Directory Info: One large dir with all emotions as dirs
@@ -54,20 +51,30 @@ def setup_test_folders(setup_folders):
                 f.write("Dummy image data")
 
 
+def teardown_test_folders(setup_folders, output_folder):
+    """
+    Remove test directories and their contents
+    """
+    for folder in setup_folders:
+        os.system(f"rm -rf {folder}")
+
+    os.system(f"rm -rf {output_folder}")
+
+
 @pytest.mark.parametrize(
     "setup_folders, output_folders",
     [
         (
             [
-                test_files_dir / "test_happy",
-                test_files_dir / "test_sad",
-                test_files_dir / "test_fear",
-                test_files_dir / "test_anger",
-                test_files_dir / "test_fun",
-                test_files_dir / "test_calm",
-                test_files_dir / "test_joy",
+                TEST_FILES_DIR / "test_happy",
+                TEST_FILES_DIR / "test_sad",
+                TEST_FILES_DIR / "test_fear",
+                TEST_FILES_DIR / "test_anger",
+                TEST_FILES_DIR / "test_fun",
+                TEST_FILES_DIR / "test_calm",
+                TEST_FILES_DIR / "test_joy",
             ],
-            test_files_dir,
+            TEST_FILES_DIR,
         ),
     ],
 )
@@ -84,7 +91,9 @@ def test_separate_images_binary(setup_folders, output_folders, caplog):
     # Set logging level to capture debug messages
     caplog.set_level(logging.DEBUG)
 
-    positive_dir, negative_dir = separate_images_binary(setup_folders, output_folders)
+    positive_dir, negative_dir = separate_images(
+        setup_folders, output_folders, binary=True
+    )
 
     # Assert that files are moved correctly to positive and negative folders
     assert positive_dir.exists() and positive_dir.is_dir()
@@ -118,25 +127,28 @@ def test_separate_images_binary(setup_folders, output_folders, caplog):
     for file in os.listdir(negative_dir):
         assert not any(keyword in file for keyword in positive_keywords)
 
+    if TEAR_DOWN:
+        teardown_test_folders(setup_folders, output_folders)
+
 
 @pytest.mark.parametrize(
     "setup_folders, output_folders",
     [
         (
             [
-                test_files_dir / "test_happy",
-                test_files_dir / "test_sad",
-                test_files_dir / "test_fear",
-                test_files_dir / "test_anger",
-                test_files_dir / "test_fun",
-                test_files_dir / "test_calm",
-                test_files_dir / "test_joy",
+                TEST_FILES_DIR / "test_happy",
+                TEST_FILES_DIR / "test_sad",
+                TEST_FILES_DIR / "test_fear",
+                TEST_FILES_DIR / "test_anger",
+                TEST_FILES_DIR / "test_fun",
+                TEST_FILES_DIR / "test_calm",
+                TEST_FILES_DIR / "test_joy",
             ],
-            test_files_dir,
+            TEST_FILES_DIR,
         ),
     ],
 )
-def test_separate_images_multiple(setup_folders, output_folders, caplog):
+def test_separate_images_multiclass(setup_folders, output_folders, caplog):
     """
     Test for separate_images_multiple function.
     Given a list of source directories, the function should move images to folders
@@ -149,7 +161,7 @@ def test_separate_images_multiple(setup_folders, output_folders, caplog):
     # Set logging level to capture debug messages
     caplog.set_level(logging.DEBUG)
 
-    destination_paths = separate_images_multiple(setup_folders, output_folders)
+    destination_paths = separate_images(setup_folders, output_folders, binary=False)
 
     for path in destination_paths:
         assert path.exists() and path.is_dir()
@@ -159,25 +171,36 @@ def test_separate_images_multiple(setup_folders, output_folders, caplog):
     for folder in setup_folders:
         assert len(os.listdir(folder / "cropped")) > 0
 
-    # Ensure that all files in a foler have the same emotion as the folder name
+    # Ensure that all files in a folder have the same emotion as the folder name
     for folder in setup_folders:
         emotion_name = folder.stem.split("_")[1]
         for file in os.listdir(folder / "cropped"):
             assert emotion_name in file
 
+    if TEAR_DOWN:
+        teardown_test_folders(setup_folders, output_folders)
+
 
 @pytest.mark.parametrize(
-    "setup_folders, output_folders",
+    "setup_folders, output_folders, error_type, error_msg",
     [
         (
-            [
-                test_files_dir / "fake",
-            ],
-            test_files_dir,
+            [TEST_FILES_DIR / "fake"],
+            TEST_FILES_DIR,
+            FileNotFoundError,
+            "Source folder {} does not exist".format(TEST_FILES_DIR / "fake"),
+        ),
+        (
+            [TEST_FILES_DIR, TEST_FILES_DIR / "fake"],  # One real and one fake folder
+            TEST_FILES_DIR,
+            FileNotFoundError,
+            "Source folder {} does not exist".format(TEST_FILES_DIR / "fake"),
         ),
     ],
 )
-def test_separate_fake_dir(setup_folders, output_folders, caplog):
+def test_separate_fake_dir(
+    setup_folders, output_folders, error_type, error_msg, caplog
+):
     """
     Test for a fake source directory that doesn't exist when passed to separate_images_binary
     """
@@ -187,128 +210,55 @@ def test_separate_fake_dir(setup_folders, output_folders, caplog):
     logging.debug("Running separate fake dir test")
 
     with pytest.raises(FileNotFoundError) as e:
-        separate_images_binary(source_dirs=setup_folders, output_dir=output_folders)
+        separate_images(source_dirs=setup_folders, output_dir=output_folders)
 
-    assert str(e.value) == "Source folder {} does not exist".format(setup_folders[0])
+        assert e.type == error_type
+        assert str(e.value) == error_msg
 
 
 @pytest.mark.parametrize(
-    "setup_folders, output_folders",
+    "setup_folders, output_folders, error_type, error_msg",
     [
         (
             [
-                test_files_dir / "fake",
+                TEST_FILES_DIR / "test_happy",
+                TEST_FILES_DIR / "test_sad",
+                TEST_FILES_DIR / "test_fear",
+                TEST_FILES_DIR / "test_anger",
+                TEST_FILES_DIR / "test_fun",
+                TEST_FILES_DIR / "test_calm",
+                TEST_FILES_DIR / "test_joy",
             ],
-            test_files_dir,
+            TEST_FILES_DIR,
+            FileNotFoundError,
+            "Source folder does not contain a 'cropped' directory, skipping.",
         ),
     ],
 )
-def test_multiclass_dir_not_exist(tmp_path):
+def test_separate_no_cropped_dir(
+    setup_folders, output_folders, error_type, error_msg, caplog
+):
     """
-    Test for multiclass where the source directory doesn't exist when passed to
-    separate_images_multiple
+    Test for a source directory that exists but doesn't contain a cropped subdirectory
     """
+    # Set logging level to capture debug messages
+    caplog.set_level(logging.DEBUG)
 
-    # Using the source directory and creating a temporary output directory
-    output_dir = tmp_path / "source_dir"
+    logging.debug("Running separate no cropped dir test")
 
-    # Creating a non-existant directory, not existing or based off source
-    non_existent_source_dir = tmp_path / "non_existent_dir"
+    setup_test_folders(setup_folders)
 
-    # Calling separate_images_multiple from data_processing and checking that non-existent
-    # directory is not found
-    # Assert a FileNotFoundError when trying to process the non-existent source directory
-    try:
-        separate_images_multiple([non_existent_source_dir], output_dir)
-    except FileNotFoundError as e:
-        assert type(e) == FileNotFoundError
+    # Remove the cropped subdirectory from the first folder
+    os.system(f"rm -rf {setup_folders[0] / 'cropped'}")
 
+    logging.debug("Removed cropped dir")
+    logging.debug(os.listdir(setup_folders[0]))
 
-def test_source_dir_no_cropped_subdir_multiclass(tmp_path):
-    """
-    Test for multi-class where the source directory exists but it doesn't contain a
-    cropped subdirectory
-    """
+    with pytest.raises(FileNotFoundError) as e:
+        separate_images(source_dirs=setup_folders, output_dir=output_folders)
 
-    # Using the source directory and creating a temporary output directory
-    output_dir = tmp_path / "source_dir"
-    os.makedirs(output_dir)
+        assert e.type == error_type
+        assert str(e.value) == error_msg
 
-    # Creating a temporary source directory
-    source_dir = tmp_path / "existing_source"
-    os.makedirs(source_dir)
-
-    # Making a dummy file in the source directory (without "cropped" subdirectory),
-    # we don't need a real image here
-    with open(source_dir / "example_image.jpg", "w"):
-        pass
-
-    # Calling separate_images_multiple from data_processing and checking that file is
-    # not found if it does not have cropped
-    with pytest.raises(FileNotFoundError):
-        separate_images_multiple([source_dir], output_dir)
-
-    # Ensuring the output directories for each emotion are not created
-    emotions = ["happy", "fun", "calm", "joy", "anger", "sad", "fear"]
-    for emotion in emotions:
-        emotion_dir = output_dir / emotion
-        assert not os.path.isdir(emotion_dir)
-
-    # Making sure the source directory exists and crop does not
-    assert "source_dir" in os.listdir(tmp_path)
-    assert "cropped" not in os.listdir(tmp_path)
-
-
-def test_binary_dir_not_exist(tmp_path):
-    """
-    A test for binary class where one of the source directories exists and another doesn't
-    """
-    # Creating a temporary output directory for binary output
-    output_dir = tmp_path / "binary_output"
-    os.makedirs(output_dir)
-
-    # Creating a temporary source directory
-    existing_source_dir = tmp_path / "existing_source"
-    os.makedirs(existing_source_dir)
-
-    # Creating a temporary source directory which is non-existent
-    non_existent_source_dir = tmp_path / "non_existent_source"
-
-    # Calling separate_images_binary from data_processing with both directories
-    # (existing and non-existing)
-    # If FileNotFoundError is raised it indicates that the 'non_existent_source_dir' doesn't exist
-    # Assert that exception raised is FileNotFoundError
-    try:
-        separate_images_binary(
-            [existing_source_dir, non_existent_source_dir], output_dir
-        )
-    except FileNotFoundError as e:
-        assert type(e) == FileNotFoundError
-
-
-def test_source_dir_no_cropped_subdir_binary(tmp_path):
-    """
-    Test for binary class where the source directory exists but it doesn't contain a
-    cropped subdirectory
-    """
-    # Creating a temporary output directory for binary output
-    output_dir = tmp_path / "binary_output"
-    os.makedirs(output_dir)
-
-    # Creating a temporary source directory
-    source_dir = tmp_path / "existing_source"
-    os.makedirs(source_dir)
-
-    # Making a dummy file in the source directory (without "cropped" subdirectory),
-    # we don't need a real image here
-    with open(source_dir / "example_image.jpg", "w", encoding="utf-8"):
-        pass
-
-    # Call separate_images_binary with the existing source directory
-    try:
-        separate_images_binary([source_dir], output_dir)
-    except FileNotFoundError as e:
-        assert type(e) == FileNotFoundError
-
-    # Making sure the source directory exists and crop does not
-    assert "cropped" not in os.listdir(output_dir)
+    if TEAR_DOWN:
+        teardown_test_folders(setup_folders, output_folders)
