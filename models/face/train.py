@@ -19,7 +19,7 @@ from tensorflow.keras.utils import image_dataset_from_directory
 from typing import List, Optional, Tuple
 
 
-CHECKPOINT_PATH = Path(__file__).parent / "checkpoints/binary.ckpt"
+CHECKPOINT_PATH = Path(__file__).parent / "checkpoints/binary-{epoch:03d}.ckpt"
 
 
 def get_individual_sets(samples, test_indices):

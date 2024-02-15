@@ -29,7 +29,7 @@ BINARY_CLASSES = [
     "positive",
 ]
 MULTICLASS_CLASSES = ["joy", "anger", "fear", "fun", "sad", "happy"]
-CHECKPOINT_PATH = Path(__file__).parent / "checkpoints/binary.ckpt"
+CHECKPOINT_PATH = Path(__file__).parent / "checkpoints/binary-{epoch:03d}.ckpt"
 
 
 def get_data(csv_paths: List[Path], classes: List[str], window_size: int = 100):
@@ -54,10 +54,10 @@ def get_data(csv_paths: List[Path], classes: List[str], window_size: int = 100):
             reader = csv.DictReader(f)
             for row in reader:
                 if match := re.search(
-                    "(?P<id>\d+)_video_\d+\.\w+", row["processed_names"]
+                    "(?P<id>\d+)_video_\d+\.\w+", row["names"]
                 ):
                     dilations_dict[classes[int(match["id"]) - 1]].append(
-                        float(row["processed_diameters"])
+                        float(row["diameters"])
                     )
 
     label = np.zeros((1, len(set(classes))))
