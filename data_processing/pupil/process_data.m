@@ -1,4 +1,4 @@
-function [] = process_data(dir, in_csv_file, mat_file, out_csv_file)
+function [] = process_data(dir, in_csv_file, mat_file, out_csv_file, plot_data)
     % Read the csv file
     csv = readtable([dir in_csv_file]);
 
@@ -63,24 +63,48 @@ function [] = process_data(dir, in_csv_file, mat_file, out_csv_file)
     pdm.processValidSamples();
 
     % Get the processed mean pupil diameters
-    processed_times = pdm.(['mean' 'Pupil_ValidSamples']).samples.t_ms;
-    processed_diameters = pdm.(['mean' 'Pupil_ValidSamples']).samples.pupilDiameter;
+    times = pdm.(['mean' 'Pupil_ValidSamples']).samples.t_ms;
+    diameters = pdm.(['mean' 'Pupil_ValidSamples']).samples.pupilDiameter;
+
+    % TODO: Convert the following code to python because it takes forever
+    % to run it in MATLAB
+
+    % Generate a series of random numbers to determine which dataset each
+    % time should belong to
+    rng(496)
+    random_numbers = rand(height(times), 1);
+
+    train_split = 0.6;
+    val_split = 0.2;
 
     % Determine which segment each diameter came from
     current_segment = 1;
-    processed_names = {zeros(1, height(processed_times))};
-    for r = 1:height(processed_times)
-        if processed_times(r) > segment_end(current_segment) * 1000
+    names = {zeros(1, height(times))};
+    starts = zeros(1, height(times));
+    datasets = {zeros(1, height(times))};
+    for r = 1:height(times)
+        if times(r) > segment_end(current_segment) * 1000
             current_segment = current_segment + 1;
         end
 
-        processed_names(r, 1) = segment_name(current_segment);
+        names(r, 1) = segment_name(current_segment);
+        starts(r, 1) = segment_start(current_segment);
+
+        if random_numbers(r) < train_split
+            datasets(r, 1) = {"train"};
+        elseif random_numbers(r) < train_split + val_split
+            datasets(r, 1) = {"val"};
+        else
+            datasets(r, 1) = {"test"};
+        end
     end
 
     % Save the results to a csv file
-    processed_data = table(processed_names, processed_times, processed_diameters);
+    processed_data = table(names, starts, times, diameters, datasets);
     writetable(processed_data, [dir out_csv_file]);
 
-    % Plot the pupil processing
-    pdm.plotData;
+    if plot_data
+        % Plot the pupil processing
+        pdm.plotData;
+    end
 end

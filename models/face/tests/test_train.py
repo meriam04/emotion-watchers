@@ -1,4 +1,4 @@
-from ..train import get_individual_sets
+from face.train import get_individual_sets
 import pytest
 
 
