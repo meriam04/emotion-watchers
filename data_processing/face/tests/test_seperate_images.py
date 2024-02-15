@@ -2,9 +2,12 @@ import os
 import pytest
 from pathlib import Path
 import logging
-from ..data_processing import separate_images_binary, separate_images_multiple
-from ..crop_and_resize_images import crop_and_resize_image, crop_and_resize_images
-from ..utils import Point, Region, Resolution
+from data_processing.data_processing import (
+    separate_images_binary,
+    separate_images_multiple,
+)
+from face.crop_and_resize_images import crop_and_resize_image, crop_and_resize_images
+from utils import Point, Region, Resolution
 
 test_files_dir = Path(__file__).parent / "test_files" / "separate_images"
 
