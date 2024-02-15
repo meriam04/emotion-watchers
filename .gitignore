@@ -4,5 +4,6 @@ data_processing/tests/test_files/cropped
 data_processing/tests/test_files/images
 data_processing/tests/test_files/separate_images
 **/__pycache__
+**/*.egg-info
 *.weights
 *.pkl
