@@ -57,7 +57,7 @@ def get_data(image_dir: List[Path], image_size: Tuple[int, int], batch_size: int
         batch_size: The batch size to be used in the training.
 
     Returns:
-        The training, validation and test sets.
+        The training, validation and test sets, as well as the classes present in the image directory.
     """
     # Generate train and val set from directory
     train_set = image_dataset_from_directory(
