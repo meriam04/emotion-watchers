@@ -1,7 +1,5 @@
 venv/
 data/
-data_processing/face/tests/test_files/cropped
-data_processing/face/tests/test_files/images
 **/__pycache__
 **/*.egg-info
 *.weights
