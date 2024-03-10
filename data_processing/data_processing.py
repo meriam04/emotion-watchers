@@ -10,6 +10,7 @@ import logging
 from face.crop_and_resize_images import crop_and_resize_images
 from utils import Point, Region, Resolution
 from face.video_to_images import extract_frames
+from face.crop_ui import run_image_cropper
 
 RATE = 1
 TOP_LEFT = Point(430, 80)
@@ -26,6 +27,37 @@ def data_processing(video_path: Path, output_path: Path, binary: bool) -> List[P
     )
     separate_images([image_dir], output_path, binary)
     return images
+
+
+def new_data_processing(video_path: Path, output_path: Path, binary: bool) -> Path:
+    """
+    Extracts frames from all videos, then crops them and separates them to the correct directory in the output path.
+    """
+    logging.basicConfig(level=logging.DEBUG)
+
+    # Get all the video files in the directory
+    video_files = [file for file in os.listdir(video_path) if file.endswith(".mp4")]
+
+    # Extract the frames from each video and get the list of image directories
+    image_dirs = []
+    for video_file in video_files:
+        video_file_path = video_path / video_file
+        image_dir = video_file_path.parent / video_file_path.stem
+        image_paths = extract_frames(video_file_path, RATE, image_dir)
+        image_dirs.append(image_dir)
+
+    # Crop the images using the UI
+    # cropped_image_dirs = []
+    for image_dir in image_dirs:
+        logging.debug("Cropping images in %s", image_dir)
+        run_image_cropper(image_dir)
+        # cropped_image_dirs.append(cropped_dir)
+
+    try:
+        separate_images(image_dirs, output_path, binary)
+    except FileNotFoundError as e:
+        logging.error("Error separating images: %s", e)
+    return output_path
 
 
 def separate_images(source_dirs, output_dir, binary=False):
@@ -90,11 +122,12 @@ def separate_images(source_dirs, output_dir, binary=False):
         for filename in files:
             source_file_path = os.path.join(crop_dir, filename)
             destination_file_path = os.path.join(destination_path, filename)
-            shutil.copy(source_file_path, destination_file_path)
+            shutil.move(source_file_path, destination_file_path)
             logging.debug("Moved %s to %s", filename, destination_path)
 
     return destination_paths.values()
 
 
 if __name__ == "__main__":
-    data_processing(Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3])
+    # data_processing(Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3])
+    new_data_processing(Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3])

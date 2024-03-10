@@ -125,12 +125,14 @@ class ImageCropper:
             cropped_folder = os.path.join(os.path.dirname(self.image_path), "cropped")
             if not os.path.exists(cropped_folder):
                 os.makedirs(cropped_folder)
-            cropped_img.save(
-                os.path.join(
-                    cropped_folder,
-                    f"{os.path.basename(self.image_path).split('.')[0]}_c.{os.path.basename(self.image_path).split('.')[-1]}",
-                )
+            cropped_file_path = os.path.join(
+                cropped_folder,
+                f"{os.path.basename(self.image_path).split('.')[0]}_c.{os.path.basename(self.image_path).split('.')[-1]}",
             )
+            cropped_img.save(cropped_file_path)
+
+            # Close the file handle associated with the saved image
+            # del cropped_img
 
             # Increment the count of images cropped
             self.images_cropped += 1
@@ -190,8 +192,14 @@ class ImageCropper:
         self.showed_success_message = True
 
 
-def run_image_cropper():
+def run_image_cropper(initial_dir=os.getcwd()):
     """Run the image cropper application."""
+
+    if not os.path.exists(initial_dir):
+        initial_dir = os.getcwd()
+
+    cropped_directory = None
+
     # Define the supported file types for image selection
     file_types = [
         ("PNG files", "*.png"),
@@ -203,7 +211,7 @@ def run_image_cropper():
 
     # Prompt the user to select an image file
     image_path = filedialog.askopenfilename(
-        title="Select Image File", filetypes=file_types
+        title="Select Image File", filetypes=file_types, initialdir=initial_dir
     )
 
     # If an image is selected, run the image cropper application
@@ -218,10 +226,30 @@ def run_image_cropper():
         root.geometry(f"{width}x{height}")
 
         # Initialize the ImageCropper object with the selected image
-        ImageCropper(root, image_path)
+        image_cropper = ImageCropper(root, image_path)
+
+        # # Bind the on_window_close function to execute when the window is closed
+        def on_window_close():
+            """Function to execute when the Tkinter window is closed."""
+            nonlocal cropped_directory
+            if cropped_directory:
+                root.destroy()
+
+        root.protocol("WM_DELETE_WINDOW", on_window_close)
+
         # Start the Tkinter event loop
         root.mainloop()
+        # return
+
+        # Once the Tkinter window is closed, get the directory where cropped images are saved
+        # cropped_directory = os.path.join(os.path.dirname(image_path), "cropped")
+
+    return cropped_directory
 
 
 if __name__ == "__main__":
-    run_image_cropper()
+    initial_directory = os.getcwd()
+    for i in range(3):
+        cropped_directory = run_image_cropper(initial_dir=initial_directory)
+    if cropped_directory:
+        print(f"Cropped images are saved in directories: {cropped_directory}")
