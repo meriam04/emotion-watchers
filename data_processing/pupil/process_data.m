@@ -1,4 +1,4 @@
-function [] = process_data(dir, in_csv_file, mat_file, out_csv_file, plot_data)
+function [] = process_data(dir, in_csv_file, mat_file, data_csv_file, seg_csv_file, plot_data)
     % Read the csv file
     csv = readtable([dir in_csv_file]);
 
@@ -31,6 +31,11 @@ function [] = process_data(dir, in_csv_file, mat_file, out_csv_file, plot_data)
         t_ms(end+1) = (segment_start(end) + csv.TIME(r)) * 1000;
         L(end+1) = csv.LPD(r);
         R(end+1) = csv.RPD(r);
+
+        % Make sure the times are at least 1 ms apart
+        if t_ms(end-1) > t_ms(end) - 1
+            t_ms(end) = t_ms(end-1) + 1;
+        end
     end
     % Add the final segment
     segment_end(end+1) = segment_start(end) + csv.TIME(end);
@@ -65,45 +70,13 @@ function [] = process_data(dir, in_csv_file, mat_file, out_csv_file, plot_data)
     % Get the processed mean pupil diameters
     times = pdm.(['mean' 'Pupil_ValidSamples']).samples.t_ms;
     diameters = pdm.(['mean' 'Pupil_ValidSamples']).samples.pupilDiameter;
+    data_table = table(times, diameters);
 
-    % TODO: Convert the following code to python because it takes forever
-    % to run it in MATLAB
+    % Save the results to 2 csv files
+    writetable(data_table, [dir data_csv_file]);
+    writetable(segmentsTable, [dir seg_csv_file]);
 
-    % Generate a series of random numbers to determine which dataset each
-    % time should belong to
-    rng(496)
-    random_numbers = rand(height(times), 1);
-
-    train_split = 0.6;
-    val_split = 0.2;
-
-    % Determine which segment each diameter came from
-    current_segment = 1;
-    names = {zeros(1, height(times))};
-    starts = zeros(1, height(times));
-    datasets = {zeros(1, height(times))};
-    for r = 1:height(times)
-        if times(r) > segment_end(current_segment) * 1000
-            current_segment = current_segment + 1;
-        end
-
-        names(r, 1) = segment_name(current_segment);
-        starts(r, 1) = segment_start(current_segment);
-
-        if random_numbers(r) < train_split
-            datasets(r, 1) = {"train"};
-        elseif random_numbers(r) < train_split + val_split
-            datasets(r, 1) = {"val"};
-        else
-            datasets(r, 1) = {"test"};
-        end
-    end
-
-    % Save the results to a csv file
-    processed_data = table(names, starts, times, diameters, datasets);
-    writetable(processed_data, [dir out_csv_file]);
-
-    if plot_data
+    if plot_data==true
         % Plot the pupil processing
         pdm.plotData;
     end
