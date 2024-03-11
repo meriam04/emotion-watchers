@@ -127,7 +127,10 @@ def data_processing(
             # Get the file at the midpoint index
             halfway_file = files[midpoint_index]
             logging.debug("Halfway file: %s", halfway_file)
-            run_image_cropper_with_image(halfway_file)
+            try:
+                run_image_cropper_with_image(image_path=halfway_file)
+            except ValueError as e:
+                logging.error("Error cropping images: %s", e)
         else:
             logging.error("Error: Directory is empty")
 

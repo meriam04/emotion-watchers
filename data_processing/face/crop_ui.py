@@ -200,82 +200,76 @@ class ImageCropper:
         self.showed_success_message = True
 
 
-def run_image_cropper(initial_dir=os.getcwd()):
+def _initialize_image_cropper(image_path=None, initial_dir=None):
+    """Common initialization for running the image cropper."""
+    if image_path is None:
+        if initial_dir is None:
+            initial_dir = os.getcwd()
+        file_types = [
+            ("PNG files", "*.png"),
+            ("JPEG files", "*.jpeg"),
+            ("JPG files", "*.jpg"),
+            ("GIF files", "*.gif"),
+            ("All files", "*.*"),
+        ]
+        image_path = filedialog.askopenfilename(
+            title="Select Image File", filetypes=file_types, initialdir=initial_dir
+        )
+
+        if not image_path:
+            logging.error("ImageCropper: no image selected")
+            raise ValueError("No image selected")
+    else:
+        if not os.path.exists(image_path):
+            logging.error("Error: Image file does not exist")
+            raise ValueError("Image file does not exist")
+
+    # Open the selected image file and get its dimensions
+    img = Image.open(image_path)
+    width, height = img.size
+
+    # Create the main Tkinter window for the image cropper
+    root = Tk()
+    root.title("Image Cropper")
+    root.geometry(f"{width}x{height}")
+
+    return root, image_path
+
+
+def run_image_cropper(initial_dir=None):
     """
     Run the image cropper application.
     NOTE: This function sometimes has bugs when called repeatedly.
     """
+    try:
+        root, image_path = _initialize_image_cropper(initial_dir=initial_dir)
 
-    if not os.path.exists(initial_dir):
-        initial_dir = os.getcwd()
+        # Initialize the ImageCropper object with the selected image
+        ImageCropper(root, image_path)
 
-    # cropped_directory = None
-
-    # Define the supported file types for image selection
-    file_types = [
-        ("PNG files", "*.png"),
-        ("JPEG files", "*.jpeg"),
-        ("JPG files", "*.jpg"),
-        ("GIF files", "*.gif"),
-        ("All files", "*.*"),
-    ]
-
-    # Prompt the user to select an image file
-    image_path = filedialog.askopenfilename(
-        title="Select Image File", filetypes=file_types, initialdir=initial_dir
-    )
-
-    # If an image is selected, run the image cropper application
-    if not image_path:
-        logging.error("ImageCropper: no image selected")
-        return
-
-    # Create the main Tkinter window for the image cropper
-    root = Tk()
-    root.title("Image Cropper")
-
-    logging.debug("ImageCropper: main Tkinter window created")
-
-    # Open the selected image file and get its dimensions
-    img = Image.open(image_path)
-    width, height = img.size
-
-    root.geometry(f"{width}x{height}")
-
-    # Initialize the ImageCropper object with the selected image
-    ImageCropper(root, image_path)
-
-    # Start the Tkinter event loop
-    root.mainloop()
-
-    logging.debug("ImageCropper: Tkinter event loop started")
-
-    return
+        # Start the Tkinter event loop
+        root.mainloop()
+    except ValueError as ve:
+        # Handle the error raised by _initialize_image_cropper
+        logging.error(str(ve))
 
 
 def run_image_cropper_with_image(image_path):
     """Run the image cropper application with a specified image file."""
+    try:
+        root, image_path = _initialize_image_cropper(image_path=image_path)
 
-    if not os.path.exists(image_path):
-        logging.error("Error: Image file does not exist")
-        return
-    # Open the selected image file and get its dimensions
-    img = Image.open(image_path)
-    width, height = img.size
+        # Initialize the ImageCropper object with the selected image
+        ImageCropper(root, image_path)
 
-    # Create the main Tkinter window for the image cropper
-    root = Tk()
-    root.title("Image Cropper")
-    root.geometry(f"{width}x{height}")
-
-    # Initialize the ImageCropper object with the selected image
-    image_cropper = ImageCropper(root, image_path)
-
-    # Start the Tkinter event loop
-    root.mainloop()
+        # Start the Tkinter event loop
+        root.mainloop()
+    except ValueError as ve:
+        # Handle the error raised by _initialize_image_cropper
+        logging.error(str(ve))
 
 
 if __name__ == "__main__":
     initial_directory = os.getcwd()
-    logging.basicConfig(level=logging.DEBUG)
-    run_image_cropper(initial_directory)
+    logging.basicConfig(level=logging.WARNING)
+    run_image_cropper(initial_dir=initial_directory)
