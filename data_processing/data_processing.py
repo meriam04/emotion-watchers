@@ -18,17 +18,6 @@ BOTTOM_RIGHT = Point(930, 580)
 RESOLUTION = Resolution(224, 224)
 
 
-def data_processing(video_path: Path, output_path: Path, binary: bool) -> List[Path]:
-    """Extracts frames from a video and crops and resizes them to a specified resolution."""
-    image_dir = video_path.parent / video_path.stem
-    image_paths = extract_frames(video_path, RATE, image_dir)
-    images = crop_and_resize_images(
-        image_paths, Region(TOP_LEFT, BOTTOM_RIGHT), RESOLUTION
-    )
-    separate_images([image_dir], output_path, binary)
-    return images
-
-
 def separate_images(source_dirs, output_dir, binary=False):
     """
     Takes in a list of source folders and separates the images into folders based on emotions.
@@ -97,7 +86,7 @@ def separate_images(source_dirs, output_dir, binary=False):
     return destination_paths.values()
 
 
-def new_data_processing(
+def data_processing(
     video_dir: Path,
     output_path: Path,
     binary: bool,
@@ -155,4 +144,4 @@ if __name__ == "__main__":
     get_frames = sys.argv[4].lower() == "true"
 
     # Call the function with converted boolean values
-    new_data_processing(Path(sys.argv[1]), Path(sys.argv[2]), binary, get_frames)
+    data_processing(Path(sys.argv[1]), Path(sys.argv[2]), binary, get_frames)
