@@ -10,7 +10,7 @@ import logging
 from face.crop_and_resize_images import crop_and_resize_images
 from utils import Point, Region, Resolution
 from face.video_to_images import extract_frames
-from face.crop_ui import run_image_cropper
+from face.crop_ui import run_image_cropper_with_image
 
 RATE = 1
 TOP_LEFT = Point(430, 80)
@@ -29,29 +29,52 @@ def data_processing(video_path: Path, output_path: Path, binary: bool) -> List[P
     return images
 
 
-def new_data_processing(video_path: Path, output_path: Path, binary: bool) -> Path:
+def new_data_processing(video_dir: Path, output_path: Path, binary: bool) -> Path:
     """
     Extracts frames from all videos, then crops them and separates them to the correct directory in the output path.
     """
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.WARNING)
 
     # Get all the video files in the directory
-    video_files = [file for file in os.listdir(video_path) if file.endswith(".mp4")]
+    video_files = [file for file in os.listdir(video_dir) if file.endswith(".mp4")]
 
     # Extract the frames from each video and get the list of image directories
     image_dirs = []
     for video_file in video_files:
-        video_file_path = video_path / video_file
+        video_file_path = video_dir / video_file
         image_dir = video_file_path.parent / video_file_path.stem
-        image_paths = extract_frames(video_file_path, RATE, image_dir)
+        extract_frames(video_file_path, RATE, image_dir)
         image_dirs.append(image_dir)
 
     # Crop the images using the UI
-    # cropped_image_dirs = []
     for image_dir in image_dirs:
         logging.debug("Cropping images in %s", image_dir)
-        run_image_cropper(image_dir)
-        # cropped_image_dirs.append(cropped_dir)
+
+        # Get the list of files (not directories) in the directory with full paths
+        # files = [
+        #     os.path.join(image_dir, file)
+        #     for file in os.listdir(image_dir)
+        #     if os.path.isfile(os.path.join(image_dir, file))
+        # ]
+
+        files = sorted(
+            [entry.path for entry in os.scandir(image_dir) if entry.is_file()]
+        )
+
+        logging.debug("Files: %s", files)
+
+        # Check if the directory is not empty
+        if files:
+            # Find the midpoint index
+            midpoint_index = len(files) // 2
+
+            # Get the file at the midpoint index
+            halfway_file = files[midpoint_index]
+            logging.debug("Halfway file: %s", halfway_file)
+            run_image_cropper_with_image(halfway_file)
+
+        else:
+            logging.error("Error: Directory is empty")
 
     try:
         separate_images(image_dirs, output_path, binary)

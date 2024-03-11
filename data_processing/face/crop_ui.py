@@ -1,6 +1,7 @@
 import os
 from tkinter import Tk, Canvas, Button, filedialog, Scrollbar, Toplevel, Label
 from PIL import Image, ImageTk
+import logging
 
 
 class ImageCropper:
@@ -13,6 +14,8 @@ class ImageCropper:
             master (Tk): The main Tkinter window.
             image_path (str): The path of the image to be cropped.
         """
+
+        logging.debug(f"ImageCropper: __init__ called with image_path: {image_path}")
 
         # Main Tkinter window
         self.master = master
@@ -125,14 +128,14 @@ class ImageCropper:
             cropped_folder = os.path.join(os.path.dirname(self.image_path), "cropped")
             if not os.path.exists(cropped_folder):
                 os.makedirs(cropped_folder)
-            cropped_file_path = os.path.join(
-                cropped_folder,
-                f"{os.path.basename(self.image_path).split('.')[0]}_c.{os.path.basename(self.image_path).split('.')[-1]}",
-            )
-            cropped_img.save(cropped_file_path)
 
-            # Close the file handle associated with the saved image
-            # del cropped_img
+            base_name = os.path.basename(self.image_path)
+            file_name_without_extension, file_extension = os.path.splitext(base_name)
+
+            cropped_file_name = f"{file_name_without_extension}_c{file_extension}"
+            cropped_file_path = os.path.join(cropped_folder, cropped_file_name)
+
+            cropped_img.save(cropped_file_path)
 
             # Increment the count of images cropped
             self.images_cropped += 1
@@ -176,18 +179,23 @@ class ImageCropper:
 
     def show_success_message(self):
         """Display a success message after cropping all images."""
+
         # Check if the success message has already been displayed
         if self.showed_success_message:
             return
+
         # Create a new top-level window for the success message
         success_dialog = Toplevel(self.master)
         success_dialog.title("Success")
+
         # Display the number of images cropped successfully
         Label(
             success_dialog, text=f"{self.images_cropped} image(s) cropped successfully!"
         ).pack()
+
         # Add a button to close the success message and exit the application
         Button(success_dialog, text="OK", command=self.master.destroy).pack()
+
         # Set the flag to indicate that the success message has been displayed
         self.showed_success_message = True
 
@@ -215,41 +223,75 @@ def run_image_cropper(initial_dir=os.getcwd()):
     )
 
     # If an image is selected, run the image cropper application
-    if image_path:
-        # Open the selected image file and get its dimensions
-        img = Image.open(image_path)
-        width, height = img.size
+    if not image_path:
+        logging.debug("ImageCropper: no image selected")
+        return
 
-        # Create the main Tkinter window for the image cropper
-        root = Tk()
-        root.title("Image Cropper")
-        root.geometry(f"{width}x{height}")
+    # Create the main Tkinter window for the image cropper
+    root = Tk()
+    root.title("Image Cropper")
 
-        # Initialize the ImageCropper object with the selected image
-        image_cropper = ImageCropper(root, image_path)
+    logging.debug("ImageCropper: main Tkinter window created")
 
-        # # Bind the on_window_close function to execute when the window is closed
-        def on_window_close():
-            """Function to execute when the Tkinter window is closed."""
-            nonlocal cropped_directory
-            if cropped_directory:
-                root.destroy()
+    # Open the selected image file and get its dimensions
+    img = Image.open(image_path)
+    width, height = img.size
 
-        root.protocol("WM_DELETE_WINDOW", on_window_close)
+    root.geometry(f"{width}x{height}")
 
-        # Start the Tkinter event loop
-        root.mainloop()
-        # return
+    # Initialize the ImageCropper object with the selected image
+    ImageCropper(root, image_path)
 
-        # Once the Tkinter window is closed, get the directory where cropped images are saved
-        # cropped_directory = os.path.join(os.path.dirname(image_path), "cropped")
+    # Bind the on_window_close function to execute when the window is closed
+    # def on_window_close():
+    #     """Function to execute when the Tkinter window is closed."""
+    #     nonlocal cropped_directory
+    #     if cropped_directory:
+    #         root.destroy()
+
+    # root.protocol("WM_DELETE_WINDOW", on_window_close)
+
+    logging.debug("ImageCropper: on_window_close function bound to window close event")
+
+    # Start the Tkinter event loop
+    root.mainloop()
+
+    logging.debug("ImageCropper: Tkinter event loop started")
+    # return
+
+    # Once the Tkinter window is closed, get the directory where cropped images are saved
+    # cropped_directory = os.path.join(os.path.dirname(image_path), "cropped")
 
     return cropped_directory
 
 
+def run_image_cropper_with_image(image_path):
+    """Run the image cropper application with a specified image file."""
+
+    if not os.path.exists(image_path):
+        logging.error("Error: Image file does not exist")
+        return
+    # Open the selected image file and get its dimensions
+    img = Image.open(image_path)
+    width, height = img.size
+
+    # Create the main Tkinter window for the image cropper
+    root = Tk()
+    root.title("Image Cropper")
+    root.geometry(f"{width}x{height}")
+
+    # Initialize the ImageCropper object with the selected image
+    image_cropper = ImageCropper(root, image_path)
+
+    # Start the Tkinter event loop
+    root.mainloop()
+
+
 if __name__ == "__main__":
     initial_directory = os.getcwd()
-    for i in range(3):
-        cropped_directory = run_image_cropper(initial_dir=initial_directory)
-    if cropped_directory:
-        print(f"Cropped images are saved in directories: {cropped_directory}")
+    logging.basicConfig(level=logging.DEBUG)
+    image_paths = [
+        "/Users/meriam/Coding/emotion-watchers/data/meriam-test-videos/2_cs_anger/2_cs_anger_0.0.png",
+        "/Users/meriam/Coding/emotion-watchers/data/meriam-test-videos/1_cs_joy/1_cs_joy_2.0.png",
+    ]
+    run_image_cropper_with_image(image_paths)
