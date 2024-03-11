@@ -201,12 +201,15 @@ class ImageCropper:
 
 
 def run_image_cropper(initial_dir=os.getcwd()):
-    """Run the image cropper application."""
+    """
+    Run the image cropper application.
+    NOTE: This function sometimes has bugs when called repeatedly.
+    """
 
     if not os.path.exists(initial_dir):
         initial_dir = os.getcwd()
 
-    cropped_directory = None
+    # cropped_directory = None
 
     # Define the supported file types for image selection
     file_types = [
@@ -224,7 +227,7 @@ def run_image_cropper(initial_dir=os.getcwd()):
 
     # If an image is selected, run the image cropper application
     if not image_path:
-        logging.debug("ImageCropper: no image selected")
+        logging.error("ImageCropper: no image selected")
         return
 
     # Create the main Tkinter window for the image cropper
@@ -242,27 +245,12 @@ def run_image_cropper(initial_dir=os.getcwd()):
     # Initialize the ImageCropper object with the selected image
     ImageCropper(root, image_path)
 
-    # Bind the on_window_close function to execute when the window is closed
-    # def on_window_close():
-    #     """Function to execute when the Tkinter window is closed."""
-    #     nonlocal cropped_directory
-    #     if cropped_directory:
-    #         root.destroy()
-
-    # root.protocol("WM_DELETE_WINDOW", on_window_close)
-
-    logging.debug("ImageCropper: on_window_close function bound to window close event")
-
     # Start the Tkinter event loop
     root.mainloop()
 
     logging.debug("ImageCropper: Tkinter event loop started")
-    # return
 
-    # Once the Tkinter window is closed, get the directory where cropped images are saved
-    # cropped_directory = os.path.join(os.path.dirname(image_path), "cropped")
-
-    return cropped_directory
+    return
 
 
 def run_image_cropper_with_image(image_path):
@@ -290,8 +278,4 @@ def run_image_cropper_with_image(image_path):
 if __name__ == "__main__":
     initial_directory = os.getcwd()
     logging.basicConfig(level=logging.DEBUG)
-    image_paths = [
-        "/Users/meriam/Coding/emotion-watchers/data/meriam-test-videos/2_cs_anger/2_cs_anger_0.0.png",
-        "/Users/meriam/Coding/emotion-watchers/data/meriam-test-videos/1_cs_joy/1_cs_joy_2.0.png",
-    ]
-    run_image_cropper_with_image(image_paths)
+    run_image_cropper(initial_directory)
