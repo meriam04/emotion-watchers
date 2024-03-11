@@ -103,9 +103,9 @@ def test_separate_images_binary(setup_folders, output_folders, caplog):
     assert len(os.listdir(positive_dir)) > 0
     assert len(os.listdir(negative_dir)) > 0
 
-    # Ensure the files weren't deleted from source folders
+    # Ensure the files were deleted from source folders
     for folder in setup_folders:
-        assert len(os.listdir(folder / "cropped")) > 0
+        assert len(os.listdir(folder / "cropped")) == 0
 
     # Ensure that all files were moved to the correct folders
     positive_keywords = ["happy", "fun", "calm", "joy"]
@@ -167,9 +167,9 @@ def test_separate_images_multiclass(setup_folders, output_folders, caplog):
         assert path.exists() and path.is_dir()
         assert len(os.listdir(path)) > 0
 
-    # Ensure the files weren't deleted from source folders
+    # Ensure the files were deleted from source folders
     for folder in setup_folders:
-        assert len(os.listdir(folder / "cropped")) > 0
+        assert len(os.listdir(folder / "cropped")) == 0
 
     # Ensure that all files in a folder have the same emotion as the folder name
     for folder in setup_folders:
