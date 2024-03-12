@@ -1,6 +1,7 @@
 import os
 from tkinter import Tk, Canvas, Button, filedialog, Scrollbar, Toplevel, Label
 from PIL import Image, ImageTk
+import logging
 
 
 class ImageCropper:
@@ -13,6 +14,8 @@ class ImageCropper:
             master (Tk): The main Tkinter window.
             image_path (str): The path of the image to be cropped.
         """
+
+        logging.debug(f"ImageCropper: __init__ called with image_path: {image_path}")
 
         # Main Tkinter window
         self.master = master
@@ -125,12 +128,14 @@ class ImageCropper:
             cropped_folder = os.path.join(os.path.dirname(self.image_path), "cropped")
             if not os.path.exists(cropped_folder):
                 os.makedirs(cropped_folder)
-            cropped_img.save(
-                os.path.join(
-                    cropped_folder,
-                    f"{os.path.basename(self.image_path).split('.')[0]}_c.{os.path.basename(self.image_path).split('.')[-1]}",
-                )
-            )
+
+            base_name = os.path.basename(self.image_path)
+            file_name_without_extension, file_extension = os.path.splitext(base_name)
+
+            cropped_file_name = f"{file_name_without_extension}_c{file_extension}"
+            cropped_file_path = os.path.join(cropped_folder, cropped_file_name)
+
+            cropped_img.save(cropped_file_path)
 
             # Increment the count of images cropped
             self.images_cropped += 1
@@ -174,54 +179,97 @@ class ImageCropper:
 
     def show_success_message(self):
         """Display a success message after cropping all images."""
+
         # Check if the success message has already been displayed
         if self.showed_success_message:
             return
+
         # Create a new top-level window for the success message
         success_dialog = Toplevel(self.master)
         success_dialog.title("Success")
+
         # Display the number of images cropped successfully
         Label(
             success_dialog, text=f"{self.images_cropped} image(s) cropped successfully!"
         ).pack()
+
         # Add a button to close the success message and exit the application
         Button(success_dialog, text="OK", command=self.master.destroy).pack()
+
         # Set the flag to indicate that the success message has been displayed
         self.showed_success_message = True
 
 
-def run_image_cropper():
-    """Run the image cropper application."""
-    # Define the supported file types for image selection
-    file_types = [
-        ("PNG files", "*.png"),
-        ("JPEG files", "*.jpeg"),
-        ("JPG files", "*.jpg"),
-        ("GIF files", "*.gif"),
-        ("All files", "*.*"),
-    ]
+def _initialize_image_cropper(image_path=None, initial_dir=None):
+    """Common initialization for running the image cropper."""
+    if image_path is None:
+        if initial_dir is None:
+            initial_dir = os.getcwd()
+        file_types = [
+            ("PNG files", "*.png"),
+            ("JPEG files", "*.jpeg"),
+            ("JPG files", "*.jpg"),
+            ("GIF files", "*.gif"),
+            ("All files", "*.*"),
+        ]
+        image_path = filedialog.askopenfilename(
+            title="Select Image File", filetypes=file_types, initialdir=initial_dir
+        )
 
-    # Prompt the user to select an image file
-    image_path = filedialog.askopenfilename(
-        title="Select Image File", filetypes=file_types
-    )
+        if not image_path:
+            logging.error("ImageCropper: no image selected")
+            raise ValueError("No image selected")
+    else:
+        if not os.path.exists(image_path):
+            logging.error("Error: Image file does not exist")
+            raise ValueError("Image file does not exist")
 
-    # If an image is selected, run the image cropper application
-    if image_path:
-        # Open the selected image file and get its dimensions
-        img = Image.open(image_path)
-        width, height = img.size
+    # Open the selected image file and get its dimensions
+    img = Image.open(image_path)
+    width, height = img.size
 
-        # Create the main Tkinter window for the image cropper
-        root = Tk()
-        root.title("Image Cropper")
-        root.geometry(f"{width}x{height}")
+    # Create the main Tkinter window for the image cropper
+    root = Tk()
+    root.title("Image Cropper")
+    root.geometry(f"{width}x{height}")
+
+    return root, image_path
+
+
+def run_image_cropper(initial_dir=None):
+    """
+    Run the image cropper application.
+    NOTE: This function sometimes has bugs when called repeatedly.
+    """
+    try:
+        root, image_path = _initialize_image_cropper(initial_dir=initial_dir)
 
         # Initialize the ImageCropper object with the selected image
         ImageCropper(root, image_path)
+
         # Start the Tkinter event loop
         root.mainloop()
+    except ValueError as ve:
+        # Handle the error raised by _initialize_image_cropper
+        logging.error(str(ve))
+
+
+def run_image_cropper_with_image(image_path):
+    """Run the image cropper application with a specified image file."""
+    try:
+        root, image_path = _initialize_image_cropper(image_path=image_path)
+
+        # Initialize the ImageCropper object with the selected image
+        ImageCropper(root, image_path)
+
+        # Start the Tkinter event loop
+        root.mainloop()
+    except ValueError as ve:
+        # Handle the error raised by _initialize_image_cropper
+        logging.error(str(ve))
 
 
 if __name__ == "__main__":
-    run_image_cropper()
+    initial_directory = os.getcwd()
+    logging.basicConfig(level=logging.WARNING)
+    run_image_cropper(initial_dir=initial_directory)
