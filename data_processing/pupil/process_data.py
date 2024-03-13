@@ -4,12 +4,14 @@ import csv
 from dataclasses import asdict, dataclass
 import os
 from pathlib import Path
+import pickle
 import re
+from scipy.interpolate import CubicSpline
 import sys
 from typing import Dict, List
 
 EXCLUSION_WORDS = ("transition",)
-OUTPUT_FILE_FORMAT = "pupil_{}_{}.csv"
+OUTPUT_FILE_FORMAT = "pupil_{}_{}.pkl"
 
 SEG_NAME_TO_EMOTION = {
     "1.mp4": "joy",
@@ -27,13 +29,6 @@ class Segment:
     name: str
     start: float
     end: float
-
-
-@dataclass
-class DataPoint:
-    time: float
-    diameter: float
-    seg_start: float
 
 
 def process_participant(
@@ -56,7 +51,7 @@ def process_participant(
 
     # Read the data csv file
     curr_seg_idx = 0
-    data: Dict[List[Dict]] = {segments[0].name: []}
+    data: Dict[Dict[List[float], List[float]]] = {segments[0].name: {"times": [], "diameters": []}}
     with open(data_file, "r") as f:
         reader = csv.DictReader(f)
         for row in reader:
@@ -64,16 +59,11 @@ def process_participant(
             time = float(row["times"])
             if time > segments[curr_seg_idx].end:
                 curr_seg_idx += 1
-                data[segments[curr_seg_idx].name] = []
+                data[segments[curr_seg_idx].name] = {"times": [], "diameters": []}
 
-            # Add the segment data to each data point
-            data[segments[curr_seg_idx].name].append(
-                asdict(
-                    DataPoint(
-                        time, float(row["diameters"]), segments[curr_seg_idx].start
-                    )
-                )
-            )
+            # Add the data point to the current segment
+            data[segments[curr_seg_idx].name]["times"].append(time - segments[curr_seg_idx].start)
+            data[segments[curr_seg_idx].name]["diameters"].append(float(row["diameters"]))
 
     # Write the output csv files
     for seg_name, seg_data in data.items():
@@ -87,10 +77,24 @@ def process_participant(
             output_file = data_dir / OUTPUT_FILE_FORMAT.format(
                 inits, SEG_NAME_TO_EMOTION[seg_name.strip()]
             )
-            with open(output_file, "w") as f:
-                writer = csv.DictWriter(f, seg_data[0].keys())
-                writer.writeheader()
-                writer.writerows(seg_data)
+
+            # Cubic smoothing
+            cspline = CubicSpline(seg_data["times"], seg_data["diameters"])
+
+            '''
+            TODO: Implement option to graph the data and save it in a separate directory
+
+            import matplotlib.pyplot as plt
+            import numpy as np
+            plt.clf()
+            xnew = np.linspace(0, seg_data["times"][-1], num=1001)
+            plt.plot(xnew, cspline(xnew), 'o', label='spline')
+            plt.plot(seg_data["times"], seg_data["diameters"], 'k', label='discrete')
+            plt.savefig(f'./{output_file}.png')
+            '''
+
+            with open(output_file, 'wb') as f:
+                pickle.dump(cspline, f)
 
 
 def process_data(data_dir: Path):
