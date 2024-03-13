@@ -1,21 +1,14 @@
 #!/usr/bin/env python3
 
-from pathlib import Path
-import sys
-import os
-import shutil
-from typing import List, Optional
+import csv
 import logging
+import os
+from pathlib import Path
+import shutil
+import sys
 
-from face.crop_and_resize_images import crop_and_resize_images
-from utils import Point, Region, Resolution
-from face.video_to_images import extract_frames
 from face.crop_ui import run_image_cropper_with_image
-
-RATE = 1
-TOP_LEFT = Point(430, 80)
-BOTTOM_RIGHT = Point(930, 580)
-RESOLUTION = Resolution(224, 224)
+from face.video_to_images import extract_frames
 
 
 def separate_images(source_dirs, output_dir, binary=False):
@@ -88,9 +81,12 @@ def separate_images(source_dirs, output_dir, binary=False):
 
 def data_processing(
     video_dir: Path,
+    pupil_dir: Path,
     output_path: Path,
     binary: bool,
-    get_frames: Optional[bool] = True,
+    split_dataset: bool = True,
+    get_frames: bool = True,
+    inclusion_rate: int = 1
 ) -> Path:
     """
     Extracts frames from all videos, then crops them and separates them to the correct directory in the output path.
@@ -98,16 +94,58 @@ def data_processing(
     logging.basicConfig(level=logging.DEBUG)
 
     # Get all the video files in the directory
-    video_files = [file for file in os.listdir(video_dir) if file.endswith(".mp4")]
+    video_files = [Path(file) for file in os.listdir(video_dir) if file.endswith(".mp4")]
 
     # Extract the frames from each video and get the list of image directories
     image_dirs = []
+
+    if split_dataset:
+        train_dirs = []
+        val_dirs = []
+        test_dirs = []
+
     for video_file in video_files:
         video_file_path = video_dir / video_file
-        image_dir = video_file_path.parent / video_file_path.stem
-        if get_frames:
-            extract_frames(video_file_path, RATE, image_dir)
-        image_dirs.append(image_dir)
+        pupil_path = pupil_dir / f"pupil_{video_file.stem}.csv"
+
+        # Create the times objects
+        if split_dataset:
+            train_times = []
+            val_times = []
+            test_times = []
+        else:
+            times = []
+
+        if pupil_path.exists():
+            with open(pupil_path, 'r') as f:
+                reader = csv.DictReader(f)
+                if split_dataset:
+                    for row in reader:
+                        if row["dataset"] == "train":
+                            train_times.append(float(row["time"]))
+                        elif row["dataset"] == "val":
+                            val_times.append(float(row["time"]))
+                        else:
+                            test_times.append(float(row["time"]))
+                else:
+                    times = [float(row["time"]) for row in reader]
+        else:
+            raise ValueError("No pupil file corresponding to {video_file}") 
+
+        if split_dataset:
+            train_dir = video_file_path.parent / video_file_path.stem / "train"
+            val_dir = video_file_path.parent / video_file_path.stem / "val"
+            test_dir = video_file_path.parent / video_file_path.stem / "test"
+            if get_frames:
+                extract_frames(video_file_path, train_times, train_dir, inclusion_rate)
+                extract_frames(video_file_path, val_times, val_dir, inclusion_rate)
+                extract_frames(video_file_path, test_times, test_dir, inclusion_rate)
+            image_dirs.extend([train_dir, val_dir, test_dir])
+        else:
+            image_dir = video_file_path.parent / video_file_path.stem
+            if get_frames:
+                extract_frames(video_file_path, times, image_dir, inclusion_rate)
+            image_dirs.append(image_dir)
 
     # Crop the images using the UI
     for image_dir in image_dirs:
@@ -135,7 +173,12 @@ def data_processing(
             logging.error("Error: Directory is empty")
 
     try:
-        separate_images(image_dirs, output_path, binary)
+        if split_dataset:
+            separate_images(train_dirs, output_path / "train", binary)
+            separate_images(val_dirs, output_path / "val", binary)
+            separate_images(test_dirs, output_path / "test", binary)
+        else:
+            separate_images(image_dirs, output_path, binary)
     except FileNotFoundError as e:
         logging.error("Error separating images: %s", e)
     return output_path
@@ -143,8 +186,15 @@ def data_processing(
 
 if __name__ == "__main__":
     # Convert string arguments to boolean values
-    binary = sys.argv[3].lower() == "true"
-    get_frames = sys.argv[4].lower() == "true"
+    binary = sys.argv[4].lower() == "true"
+    split_dataset = sys.argv[5].lower() == "true"
+    get_frames = sys.argv[6].lower() == "true"
 
     # Call the function with converted boolean values
-    data_processing(Path(sys.argv[1]), Path(sys.argv[2]), binary, get_frames)
+    data_processing(Path(sys.argv[1]),
+                    Path(sys.argv[2]),
+                    Path(sys.argv[3]),
+                    binary,
+                    split_dataset,
+                    get_frames,
+                    int(sys.argv[7]))

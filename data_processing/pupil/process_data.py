@@ -4,6 +4,7 @@ import csv
 from dataclasses import asdict, dataclass
 import os
 from pathlib import Path
+import random
 import re
 import sys
 from typing import Dict, List
@@ -33,11 +34,16 @@ class Segment:
 class DataPoint:
     time: float
     diameter: float
-    seg_start: float
+    dataset: str
 
 
 def process_participant(
-    data_dir: Path, data_file: Path, segments_file: Path, inits: str
+    data_dir: Path,
+    data_file: Path,
+    segments_file: Path,
+    inits: str,
+    val_split = 0.2,
+    test_split = 0.2
 ):
     # TODO: Call process_data.m from python
 
@@ -66,11 +72,20 @@ def process_participant(
                 curr_seg_idx += 1
                 data[segments[curr_seg_idx].name] = []
 
-            # Add the segment data to each data point
+            # Get the dataset assignment
+            r = random.random()
+            if r < test_split:
+                dataset = "test"
+            elif r < val_split + test_split:
+                dataset = "val"
+            else:
+                dataset = "train"
+
+            # Add the data to the data point
             data[segments[curr_seg_idx].name].append(
                 asdict(
                     DataPoint(
-                        time, float(row["diameters"]), segments[curr_seg_idx].start
+                        time, float(row["diameters"]), dataset
                     )
                 )
             )
@@ -94,6 +109,8 @@ def process_participant(
 
 
 def process_data(data_dir: Path):
+    random.seed(496)
+
     # Iterate over all csv files in the data_dir
     csv_files = {}
     for file in os.listdir(data_dir):

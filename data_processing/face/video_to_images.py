@@ -10,7 +10,10 @@ video_formats = (".mov", ".mp4", ".wav")
 
 
 def extract_frames(
-    video: Path, rate: int, image_dir: Path = Path(__file__).parent / "images"
+    video: Path,
+    times: List[float],
+    image_dir: Path = Path(__file__).parent / "images",
+    inclusion_rate: int = 1
 ) -> List[Path]:
     """
     This function extracts the frames of the specified video.
@@ -29,8 +32,8 @@ def extract_frames(
 
     clip = VideoFileClip(video.absolute().as_posix())
     image_paths = []
-    for i in range(int(rate * clip.duration)):
-        time = i / rate
+    for i in range(0, len(times), inclusion_rate):
+        time = (times[i] - times[0]) / 1000
         image_path = image_dir / Path(f"{video.stem}_{time}.png")
         clip.save_frame(image_path, time)
         image_paths.append(image_path)
