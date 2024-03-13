@@ -1,22 +1,16 @@
 #!/usr/bin/env python3
 
-from pathlib import Path
-import sys
-import os
-import shutil
-from typing import List, Optional
 import logging
+import os
+from pathlib import Path
+import shutil
+import sys
+from typing import Optional
 
-from face.crop_and_resize_images import crop_and_resize_images
-from utils import Point, Region, Resolution
-from face.video_to_images import extract_frames
 from face.crop_ui import run_image_cropper_with_image
+from face.video_to_images import extract_frames
 
 RATE = 1
-TOP_LEFT = Point(430, 80)
-BOTTOM_RIGHT = Point(930, 580)
-RESOLUTION = Resolution(224, 224)
-
 
 def separate_images(source_dirs, output_dir, binary=False):
     """

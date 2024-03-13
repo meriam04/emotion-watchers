@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# TODO: Delete this
+
 import cv2
 import os
 from pathlib import Path
