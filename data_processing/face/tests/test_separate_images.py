@@ -35,7 +35,7 @@ def set_logging_level(caplog):
     caplog.set_level(logging.DEBUG)
 
 
-def setup_test_folders(setup_folders):
+def setup_test_folders(setup_folders, num_images):
     """
     Create test directories and populate them with dummy image values.
     Each folder will have 5 images named image_0_emotion.jpg, image_1_emotion.jpg, etc.
@@ -46,8 +46,8 @@ def setup_test_folders(setup_folders):
             1
         ]  # Extract emotion name from folder name
         # Create dummy image files with emotion name
-        for i in range(5):
-            with open(folder / f"cropped/image_{i}_{emotion_name}.jpg", "w") as f:
+        for i in range(num_images):
+            with open(folder / f"cropped/image_{i}_{emotion_name}_{i}.{i}_c.jpg", "w") as f:
                 f.write("Dummy image data")
 
 
@@ -62,7 +62,7 @@ def teardown_test_folders(setup_folders, output_folder):
 
 
 @pytest.mark.parametrize(
-    "setup_folders, output_folders",
+    "setup_folders, output_folders, num_images",
     [
         (
             [
@@ -75,10 +75,11 @@ def teardown_test_folders(setup_folders, output_folder):
                 TEST_FILES_DIR / "test_joy",
             ],
             TEST_FILES_DIR,
+            5,
         ),
     ],
 )
-def test_separate_images_binary(setup_folders, output_folders, caplog):
+def test_separate_images_binary(setup_folders, output_folders, num_images, caplog):
     """
     Test for separate_images_binary function.
     Given a list of source directories, the function should move images to positive
@@ -86,14 +87,15 @@ def test_separate_images_binary(setup_folders, output_folders, caplog):
     """
 
     # Call the setup_test_folders function to prepare test directories
-    setup_test_folders(setup_folders)
+    setup_test_folders(setup_folders, num_images)
 
     # Set logging level to capture debug messages
     caplog.set_level(logging.DEBUG)
 
-    positive_dir, negative_dir = separate_images(
-        setup_folders, output_folders, binary=True
-    )
+    positive_dir, negative_dir = separate_images(setup_folders,
+                                                 output_folders,
+                                                 binary=True,
+                                                 split_files=False).values()
 
     # Assert that files are moved correctly to positive and negative folders
     assert positive_dir.exists() and positive_dir.is_dir()
@@ -103,9 +105,9 @@ def test_separate_images_binary(setup_folders, output_folders, caplog):
     assert len(os.listdir(positive_dir)) > 0
     assert len(os.listdir(negative_dir)) > 0
 
-    # Ensure the files were deleted from source folders
+    # Ensure the files were copied from source folders
     for folder in setup_folders:
-        assert len(os.listdir(folder / "cropped")) == 0
+        assert len(os.listdir(folder / "cropped")) == num_images
 
     # Ensure that all files were moved to the correct folders
     positive_keywords = ["happy", "fun", "calm", "joy"]
@@ -132,7 +134,7 @@ def test_separate_images_binary(setup_folders, output_folders, caplog):
 
 
 @pytest.mark.parametrize(
-    "setup_folders, output_folders",
+    "setup_folders, output_folders, num_images",
     [
         (
             [
@@ -145,10 +147,11 @@ def test_separate_images_binary(setup_folders, output_folders, caplog):
                 TEST_FILES_DIR / "test_joy",
             ],
             TEST_FILES_DIR,
+            5,
         ),
     ],
 )
-def test_separate_images_multiclass(setup_folders, output_folders, caplog):
+def test_separate_images_multiclass(setup_folders, output_folders, num_images, caplog):
     """
     Test for separate_images_multiple function.
     Given a list of source directories, the function should move images to folders
@@ -156,20 +159,23 @@ def test_separate_images_multiclass(setup_folders, output_folders, caplog):
     """
 
     # Call the setup_test_folders function to prepare test directories
-    setup_test_folders(setup_folders)
+    setup_test_folders(setup_folders, num_images)
 
     # Set logging level to capture debug messages
     caplog.set_level(logging.DEBUG)
 
-    destination_paths = separate_images(setup_folders, output_folders, binary=False)
+    destination_paths = separate_images(setup_folders,
+                                        output_folders,
+                                        binary=False,
+                                        split_files=False)
 
-    for path in destination_paths:
+    for path in destination_paths.values():
         assert path.exists() and path.is_dir()
         assert len(os.listdir(path)) > 0
 
-    # Ensure the files were deleted from source folders
+    # Ensure the files were copied from source folders
     for folder in setup_folders:
-        assert len(os.listdir(folder / "cropped")) == 0
+        assert len(os.listdir(folder / "cropped")) == num_images
 
     # Ensure that all files in a folder have the same emotion as the folder name
     for folder in setup_folders:
@@ -210,14 +216,14 @@ def test_separate_fake_dir(
     logging.debug("Running separate fake dir test")
 
     with pytest.raises(FileNotFoundError) as e:
-        separate_images(source_dirs=setup_folders, output_dir=output_folders)
+        separate_images(source_dirs=setup_folders, output_dir=output_folders, split_files=False)
 
         assert e.type == error_type
         assert str(e.value) == error_msg
 
 
 @pytest.mark.parametrize(
-    "setup_folders, output_folders, error_type, error_msg",
+    "setup_folders, output_folders, num_images, error_type, error_msg",
     [
         (
             [
@@ -230,13 +236,14 @@ def test_separate_fake_dir(
                 TEST_FILES_DIR / "test_joy",
             ],
             TEST_FILES_DIR,
+            5,
             FileNotFoundError,
             "Source folder does not contain a 'cropped' directory, skipping.",
         ),
     ],
 )
 def test_separate_no_cropped_dir(
-    setup_folders, output_folders, error_type, error_msg, caplog
+    setup_folders, output_folders, num_images, error_type, error_msg, caplog
 ):
     """
     Test for a source directory that exists but doesn't contain a cropped subdirectory
@@ -246,19 +253,22 @@ def test_separate_no_cropped_dir(
 
     logging.debug("Running separate no cropped dir test")
 
-    setup_test_folders(setup_folders)
+    setup_test_folders(setup_folders, num_images)
 
     # Remove the cropped subdirectory from the first folder
-    os.system(f"rm -rf {setup_folders[0] / 'cropped'}")
+    cropped_dir = setup_folders[0] / 'cropped'
+    for file in os.listdir(cropped_dir):
+        os.remove(cropped_dir / file)
+    os.rmdir(cropped_dir)
 
     logging.debug("Removed cropped dir")
     logging.debug(os.listdir(setup_folders[0]))
 
     with pytest.raises(FileNotFoundError) as e:
-        separate_images(source_dirs=setup_folders, output_dir=output_folders)
+        separate_images(source_dirs=setup_folders, output_dir=output_folders, split_files=False)
 
-        assert e.type == error_type
-        assert str(e.value) == error_msg
+    assert e.type == error_type
+    assert str(e.value) == error_msg
 
     if TEAR_DOWN:
         teardown_test_folders(setup_folders, output_folders)
