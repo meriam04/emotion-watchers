@@ -15,12 +15,15 @@ from face.video_to_images import extract_frames
 RATE = 1
 TIMES_FILE = "times.csv"
 
-def separate_images(source_dirs,
-                    output_dir,
-                    binary=False,
-                    split_files=True,
-                    test_split=0.2,
-                    val_split=0.2):
+
+def separate_images(
+    source_dirs,
+    output_dir,
+    binary=False,
+    split_files=True,
+    test_split=0.2,
+    val_split=0.2,
+):
     """
     Takes in a list of source folders and separates the images into folders based on emotions.
     Each source folder should contain a 'cropped' directory with the images to be copied.
@@ -50,7 +53,7 @@ def separate_images(source_dirs,
         datasets = ["train", "val", "test"]
     else:
         datasets = [""]
-    
+
     destination_paths = {}
 
     for dataset in datasets:
@@ -79,7 +82,10 @@ def separate_images(source_dirs,
                 break
 
         if matched_emotion:
-            emotion_paths = {dataset: destination_paths[dataset][matched_emotion] for dataset in datasets}
+            emotion_paths = {
+                dataset: destination_paths[dataset][matched_emotion]
+                for dataset in datasets
+            }
             logging.debug("Keyword matched: %s", matched_emotion)
         else:
             logging.debug(
@@ -90,8 +96,12 @@ def separate_images(source_dirs,
 
         files = {"": os.listdir(crop_dir)}
         if split_files:
-            files["train"], files["test"] = train_test_split(files[""], test_size=test_split, random_state=496)
-            files["train"], files["val"] = train_test_split(files["train"], test_size=val_split, random_state=496)
+            files["train"], files["test"] = train_test_split(
+                files[""], test_size=test_split, random_state=496
+            )
+            files["train"], files["val"] = train_test_split(
+                files["train"], test_size=val_split, random_state=496
+            )
 
         def move_files(files, dest_path):
             times = []
@@ -106,12 +116,12 @@ def separate_images(source_dirs,
 
                 shutil.copy(source_file_path, destination_file_path)
                 logging.debug("Moved %s to %s", filename, dest_path)
-            
-            with open(dest_path / TIMES_FILE, 'w') as f:
+
+            with open(dest_path / TIMES_FILE, "w") as f:
                 writer = csv.DictWriter(f, times[0].keys())
                 writer.writeheader()
                 writer.writerows(times)
-        
+
         for dataset, emotion_path in emotion_paths.items():
             move_files(files[dataset], emotion_path)
 
@@ -185,4 +195,6 @@ if __name__ == "__main__":
     crop_images = sys.argv[5].lower() == "true"
 
     # Call the function with converted boolean values
-    data_processing(Path(sys.argv[1]), Path(sys.argv[2]), binary, get_frames, crop_images)
+    data_processing(
+        Path(sys.argv[1]), Path(sys.argv[2]), binary, get_frames, crop_images
+    )
