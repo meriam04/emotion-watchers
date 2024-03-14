@@ -15,6 +15,23 @@ from data_processing.face.video_to_images import extract_frames
 RATE = 1
 TIMES_FILE = "times.csv"
 
+BINARY_EMOTIONS = {
+    "anger": "negative",
+    "calm": "positive",
+    "fear": "negative",
+    "fun": "positive",
+    "happy": "positive",
+    "joy": "positive",
+    "sad": "negative",}
+MULTICLASS_EMOTIONS = {
+    "anger": "anger",
+    "calm": "calm",
+    "fear": "fear",
+    "fun": "fun",
+    "happy": "happy",
+    "joy": "joy",
+    "sad": "sad",}
+
 
 def separate_images(
     source_dirs,
@@ -23,6 +40,7 @@ def separate_images(
     split_files=True,
     test_split=0.2,
     val_split=0.2,
+    split_participants=True,
 ):
     """
     Takes in a list of source folders and separates the images into folders based on emotions.
@@ -31,13 +49,6 @@ def separate_images(
 
     # TODO: Add comments to this function
 
-    emotions_binary = {
-        "positive": ["happy", "fun", "calm", "joy"],
-        "negative": ["anger", "sad", "fear"],
-    }
-
-    emotions_multiple = ["happy", "fun", "calm", "joy", "anger", "sad", "fear"]
-
     for source_dir in source_dirs:
         if not os.path.exists(source_dir):
             raise FileNotFoundError(
@@ -45,9 +56,9 @@ def separate_images(
             )
 
     if binary:
-        emotions = emotions_binary
+        emotions = BINARY_EMOTIONS
     else:
-        emotions = {emotion: [emotion] for emotion in emotions_multiple}
+        emotions = MULTICLASS_EMOTIONS
 
     if split_files:
         datasets = ["train", "val", "test"]
@@ -58,7 +69,7 @@ def separate_images(
 
     for dataset in datasets:
         destination_paths[dataset] = {}
-        for emotion_category, _ in emotions.items():
+        for emotion_category in set(emotions.values()):
             destination_path = Path(output_dir) / dataset / emotion_category
             destination_paths[dataset][emotion_category] = destination_path
 
@@ -75,13 +86,9 @@ def separate_images(
 
         crop_dir = source_dir / "cropped"
 
-        matched_emotion = None
-        for emotion in emotions:
-            if any(keyword in str(source_dir) for keyword in emotions[emotion]):
-                matched_emotion = emotion
-                break
-
-        if matched_emotion:
+        if match := re.search(r".*(/|\\)(?P<inits>\w+)_(?P<emotion>\w+)", str(source_dir)):
+            matched_emotion = emotions[match["emotion"]]
+            inits = match["inits"]
             emotion_paths = {
                 dataset: destination_paths[dataset][matched_emotion]
                 for dataset in datasets
@@ -103,7 +110,7 @@ def separate_images(
                 files["train"], test_size=val_split, random_state=496
             )
 
-        def move_files(files, dest_path):
+        def copy_files(files, dest_path):
             times = []
             for filename in files:
                 source_file_path = crop_dir / filename
@@ -115,7 +122,7 @@ def separate_images(
                     raise ValueError("No timestamp in filename")
 
                 shutil.copy(source_file_path, destination_file_path)
-                logging.debug("Moved %s to %s", filename, dest_path)
+                logging.debug("Copied %s to %s", filename, dest_path)
 
             with open(dest_path / TIMES_FILE, "w") as f:
                 writer = csv.DictWriter(f, times[0].keys())
@@ -123,7 +130,16 @@ def separate_images(
                 writer.writerows(times)
 
         for dataset, emotion_path in emotion_paths.items():
-            move_files(files[dataset], emotion_path)
+            copy_files(files[dataset], emotion_path)
+
+        if split_files and split_participants:
+            individual_path = Path(output_dir) / inits
+            destination_paths[inits] = individual_path
+
+            if not os.path.exists(individual_path):
+                os.makedirs(individual_path)
+
+            copy_files(files["test"], individual_path)
 
     if split_files:
         return destination_paths
@@ -131,7 +147,7 @@ def separate_images(
         return destination_paths[""]
 
 
-def data_processing(
+def process_data(
     video_dir: Path,
     output_path: Path,
     binary: bool,
@@ -195,6 +211,6 @@ if __name__ == "__main__":
     crop_images = sys.argv[5].lower() == "true"
 
     # Call the function with converted boolean values
-    data_processing(
+    process_data(
         Path(sys.argv[1]), Path(sys.argv[2]), binary, get_frames, crop_images
     )
