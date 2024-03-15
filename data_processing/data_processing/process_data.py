@@ -22,7 +22,8 @@ BINARY_EMOTIONS = {
     "fun": "positive",
     "happy": "positive",
     "joy": "positive",
-    "sad": "negative",}
+    "sad": "negative",
+}
 MULTICLASS_EMOTIONS = {
     "anger": "anger",
     "calm": "calm",
@@ -30,7 +31,8 @@ MULTICLASS_EMOTIONS = {
     "fun": "fun",
     "happy": "happy",
     "joy": "joy",
-    "sad": "sad",}
+    "sad": "sad",
+}
 
 
 def separate_images(
@@ -89,7 +91,9 @@ def separate_images(
         crop_dir = source_dir / "cropped"
 
         # Check that the folder names matches the expected syntax
-        if match := re.search(r".*(/|\\)(?P<inits>\w+)_(?P<emotion>\w+)", str(source_dir)):
+        if match := re.search(
+            r".*(/|\\)(?P<inits>\w+)_(?P<emotion>\w+)", str(source_dir)
+        ):
             matched_emotion = emotions[match["emotion"]]
             inits = match["inits"]
             # Get the destination paths for this source directory
@@ -223,6 +227,4 @@ if __name__ == "__main__":
     crop_images = sys.argv[5].lower() == "true"
 
     # Call the function with converted boolean values
-    process_data(
-        Path(sys.argv[1]), Path(sys.argv[2]), binary, get_frames, crop_images
-    )
+    process_data(Path(sys.argv[1]), Path(sys.argv[2]), binary, get_frames, crop_images)
