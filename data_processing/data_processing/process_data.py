@@ -47,14 +47,14 @@ def separate_images(
     Each source folder should contain a 'cropped' directory with the images to be copied.
     """
 
-    # TODO: Add comments to this function
-
+    # Checks that source_dirs exist
     for source_dir in source_dirs:
         if not os.path.exists(source_dir):
             raise FileNotFoundError(
                 "Source folder {} does not exist".format(source_dir)
             )
 
+    # Gets the correct emotion dictionary
     if binary:
         emotions = BINARY_EMOTIONS
     else:
@@ -65,8 +65,8 @@ def separate_images(
     else:
         datasets = [""]
 
+    # Create a dictionary of destination paths for each dataset and emotion
     destination_paths = {}
-
     for dataset in datasets:
         destination_paths[dataset] = {}
         for emotion_category in set(emotions.values()):
@@ -76,9 +76,11 @@ def separate_images(
             if not os.path.exists(destination_path):
                 os.makedirs(destination_path)
 
+    # Copy the files for each source directory
     for source_dir in source_dirs:
         logging.debug("Source folder: %s", source_dir)
 
+        # Check that a cropped directory exists
         if "cropped" not in os.listdir(source_dir):
             raise FileNotFoundError(
                 "Source folder does not contain a 'cropped' directory, skipping."
@@ -86,9 +88,11 @@ def separate_images(
 
         crop_dir = source_dir / "cropped"
 
+        # Check that the folder names matches the expected syntax
         if match := re.search(r".*(/|\\)(?P<inits>\w+)_(?P<emotion>\w+)", str(source_dir)):
             matched_emotion = emotions[match["emotion"]]
             inits = match["inits"]
+            # Get the destination paths for this source directory
             emotion_paths = {
                 dataset: destination_paths[dataset][matched_emotion]
                 for dataset in datasets
@@ -101,7 +105,10 @@ def separate_images(
             )
             continue
 
+        # Get the list of files that need to be copied
         files = {"": os.listdir(crop_dir)}
+
+        # Split the files into train/val/test sets
         if split_files:
             files["train"], files["test"] = train_test_split(
                 files[""], test_size=test_split, random_state=496
@@ -110,12 +117,14 @@ def separate_images(
                 files["train"], test_size=val_split, random_state=496
             )
 
+        # Copy all of the files into the dest_path
         def copy_files(files, dest_path):
             times = []
             for filename in files:
                 source_file_path = crop_dir / filename
                 destination_file_path = dest_path / filename
 
+                # Get the timestamp from the image name
                 if match := re.search(".+_(?P<time>\d+.\d+)_c.(png|jpg)", filename):
                     times.append({"times": float(match["time"])})
                 else:
@@ -124,14 +133,17 @@ def separate_images(
                 shutil.copy(source_file_path, destination_file_path)
                 logging.debug("Copied %s to %s", filename, dest_path)
 
+            # Save a list of times for data synchronization
             with open(dest_path / TIMES_FILE, "w") as f:
                 writer = csv.DictWriter(f, times[0].keys())
                 writer.writeheader()
                 writer.writerows(times)
 
+        # Copy all of the files in source_dir into the correct directories
         for dataset, emotion_path in emotion_paths.items():
             copy_files(files[dataset], emotion_path)
 
+        # Copy each individual's files into the individual's directory
         if split_files and split_participants:
             individual_path = Path(output_dir) / inits
             destination_paths[inits] = individual_path
