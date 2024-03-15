@@ -1,10 +1,7 @@
-import numpy as np
 from pathlib import Path
-import re
 import sys
 import tensorflow as tf
 from tensorflow.data import AUTOTUNE
-from tensorflow.data.experimental import cardinality
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import (
@@ -16,43 +13,18 @@ from tensorflow.keras.layers import (
     Rescaling,
 )
 from tensorflow.keras.utils import image_dataset_from_directory
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 
 CHECKPOINT_PATH = Path(__file__).parent / "checkpoints/binary-{epoch:03d}.ckpt"
 
 
-def get_individual_sets(samples, test_indices):
-    """
-    Get the indices of the samples that belong to the same individual.
-
-    Args:
-        samples: The list of samples.
-        test_indices: The indices of the samples in the test set.
-
-    Returns:
-        A dictionary with the indices of the samples that belong to the same individual.
-    """
-    individual_sets = {}
-    for test_idx in test_indices:
-        # Expects files of the format:
-        # <emotion_id>_<initial>_<emotion_name>_<second_in_video>_c.png
-        # Example: 1_cs_joy_1.0_c.png
-        individual = re.search(
-            ".*\d_(?P<individual>\w+)_\w+_\d+\.\d+_c\.png", samples[test_idx][0]
-        )["individual"]
-        if individual not in individual_sets:
-            individual_sets[individual] = []
-        individual_sets[individual].append(test_idx)
-    return individual_sets
-
-
-def get_data(image_dir: List[Path], image_size: Tuple[int, int], batch_size: int = 32):
+def get_data(image_dir: Path, image_size: Tuple[int, int], batch_size: int = 32):
     """
     Get the data from the emotion directories and create the dataset.
 
     Args:
-        image_dir: The list of directories containing the images.
+        image_dir: The directory containing the images.
         image_size: The size of the images in pixels (e.g. (224, 224)).
         batch_size: The batch size to be used in the training.
 
@@ -120,7 +92,6 @@ def create_model(num_classes: int, input_shape: Optional[Tuple[int, int, int]] =
 
 if __name__ == "__main__":
     # fix random seed for reproducibility
-    np.random.seed(496)
     tf.random.set_seed(496)
 
     batch_size = 32

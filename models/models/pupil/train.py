@@ -2,10 +2,11 @@ import csv
 import numpy as np
 import os
 from pathlib import Path
+import pickle
 import re
 import sys
 import tensorflow as tf
-from tensorflow.data import Dataset
+from tensorflow.data import AUTOTUNE, Dataset
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import (
@@ -17,24 +18,20 @@ from tensorflow.keras.layers import (
     LSTM,
     Rescaling,
 )
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 
-BINARY_CLASSES = [
-    "positive",
-    "negative",
-    "negative",
-    "positive",
-    "negative",
-    "positive",
-]
-MULTICLASS_CLASSES = ["joy", "anger", "fear", "fun", "sad", "happy"]
+from data_processing.process_data import TIMES_FILE_FORMAT
+
+
 CHECKPOINT_PATH = Path(__file__).parent / "checkpoints/binary-{epoch:03d}.ckpt"
+MAX_PUPIL_DILATION = 30
+PERIOD = 0.01 #s
 
 
-def get_data(csv_paths: List[Path], classes: List[str], window_size: int = 100):
+def get_data(pkl_dir: Path, face_dir: Path, window_size: int = 100, batch_size: int = 32):
     """
-    Get the data from the .csv files and create the training, validation and test sets.
+    Get the functions from the .pkl files and timestamps from the face directories, then create the dataset.
 
     Args:
         csv_paths: The list of paths to the .csv files containing the pupillometry data.
@@ -42,68 +39,57 @@ def get_data(csv_paths: List[Path], classes: List[str], window_size: int = 100):
         window_size: The number of data samples to be considered at a time.
 
     Returns:
-        The training, validation and test sets.
+        The dataset.
     """
-    # Load the dataset from the .csv file
-    dilations_dict = {}
-    for c in classes:
-        dilations_dict[c] = []
+    # Read the splines from the pkl files
+    splines = {}
+    for file in os.listdir(pkl_dir):
+        # Check if the file is a pkl with the correct format
+        if match := re.search(r"pupil_(?P<inits>\w+)_(?P<emotion>\w+).pkl$", str(file)):
+            emotion = match["emotion"]
+            inits = match["inits"]
 
-    for path in csv_paths:
-        with open(path, "r") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                if match := re.search(
-                    "(?P<id>\d+)_video_\d+\.\w+", row["names"]
-                ):
-                    dilations_dict[classes[int(match["id"]) - 1]].append(
-                        float(row["diameters"])
-                    )
+            if match["inits"] not in splines:
+                splines[match["inits"]] = {}
 
-    label = np.zeros((1, len(set(classes))))
+            with open(pkl_dir / file, 'rb') as f:
+                splines[inits][emotion] = pickle.load(f)
 
+    # Generate the dilations_windows, labels, and classes
     dilation_windows = []
-    label_windows = []
-    for emotion, dilations in dilations_dict.items():
-        new_label = np.copy(label)
-        new_label[0][list(set(classes)).index(emotion)] = 1.0
-        num_windows = int(len(dilations) // window_size)
-        for i in range(num_windows):
-            dilation_windows.append(dilations[i * window_size : (i + 1) * window_size])
-            label_windows.append(list(set(classes)).index(emotion))
+    labels = []
+    classes = []
+    for i, label in enumerate(os.listdir(face_dir)):
+        classes.append(label)
+        for inits, init_splines in splines.items():
+            for emotion, spline in init_splines.items():
+                # Get the times file for this inits + emotion combination
+                times_path = face_dir / label / TIMES_FILE_FORMAT.format(inits, emotion)
+                if not os.path.isfile(times_path):
+                    continue
 
-    # Make a list of indices for the dataset
-    indices = []
-    for i in range(len(dilation_windows)):
-        indices.append(i)
-    # Shuffle the indices
-    np.random.shuffle(indices)
+                with open(times_path, 'r') as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        # Check if a window can be generated for this time
+                        end_time = float(row["times"])
+                        if end_time < PERIOD * window_size:
+                            continue
 
-    train_val_split = int(len(indices) * 0.6)
-    val_test_split = int(len(indices) * 0.8)
+                        # Generate a window for this time
+                        times = np.linspace(end_time - PERIOD * window_size, end_time, window_size)
+                        dilation_windows.append(spline(times))
+                        labels.append(i)
 
-    train_indices = indices[:train_val_split]
-    val_indices = indices[train_val_split:val_test_split]
-    test_indices = indices[val_test_split:]
+    # Convert the dilations and labels to a tensor dataset
+    dilations_t = tf.convert_to_tensor(dilation_windows)
+    labels_t = tf.convert_to_tensor(labels)
+    dataset = Dataset.from_tensor_slices((dilations_t, labels_t))
 
-    def make_dataset(dilations_set, labels_set, indices_set):
-        shuffled_dilations = []
-        shuffled_labels = []
-        for idx in indices_set:
-            shuffled_dilations.append(dilations_set[idx])
-            shuffled_labels.append(labels_set[idx])
+    # Prefetch datasets
+    dataset = dataset.batch(batch_size).cache().shuffle(1000).prefetch(AUTOTUNE)
 
-        dilations_t = tf.expand_dims(tf.convert_to_tensor(shuffled_dilations), 1)
-        labels_t = tf.expand_dims(tf.convert_to_tensor(shuffled_labels), 1)
-
-        # Last batch is dropped because it may not be the correct size
-        return Dataset.from_tensor_slices((dilations_t, labels_t))
-
-    train_set = make_dataset(dilation_windows, label_windows, train_indices)
-    val_set = make_dataset(dilation_windows, label_windows, val_indices)
-    test_set = make_dataset(dilation_windows, label_windows, test_indices)
-
-    return train_set, val_set, test_set
+    return dataset, classes
 
 
 def create_model(num_classes: int, input_shape: Optional[Tuple[int, int]] = None):
@@ -124,7 +110,7 @@ def create_model(num_classes: int, input_shape: Optional[Tuple[int, int]] = None
     if input_shape:
         model.add(Input(input_shape))
 
-    model.add(Rescaling(1.0 / 35))
+    model.add(Rescaling(1.0 / MAX_PUPIL_DILATION))
     model.add(Bidirectional(LSTM(16, dropout=0.2, return_sequences=True)))
     model.add(Conv1D(32, 3, activation="selu"))
     model.add(Dropout(0.2))
@@ -151,25 +137,20 @@ def create_model(num_classes: int, input_shape: Optional[Tuple[int, int]] = None
 
 if __name__ == "__main__":
     # fix random seed for reproducibility
-    np.random.seed(496)
     tf.random.set_seed(496)
 
-    csv_paths = []
-    for file in os.listdir(sys.argv[1]):
-        if re.search("pupil_\w+\.csv", Path(file).name):
-            csv_paths.append(Path(sys.argv[1]) / file)
-
-    classes = BINARY_CLASSES
     window_size = 100
+    batch_size = 32
 
-    train_set, val_set, test_set = get_data(csv_paths, classes, window_size)
+    train_set, classes = get_data(Path(sys.argv[1]), Path(sys.argv[2]) / "train", window_size, batch_size)
+    val_set, _ = get_data(Path(sys.argv[1]), Path(sys.argv[2]) / "val", window_size, batch_size)
 
     input_shape = (window_size, 1)
-    num_classes = len(set(classes))
+    num_classes = len(classes)
 
     # Create the LSTM model
     model = create_model(num_classes, input_shape)
 
     # Training
     cp_callback = ModelCheckpoint(CHECKPOINT_PATH, save_weights_only=True, verbose=1)
-    model.fit(train_set, validation_data=val_set, epochs=3, callbacks=[cp_callback])
+    model.fit(train_set, validation_data=val_set, epochs=10, callbacks=[cp_callback])
