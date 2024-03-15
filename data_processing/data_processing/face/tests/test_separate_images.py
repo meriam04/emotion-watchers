@@ -3,7 +3,7 @@ import pytest
 from pathlib import Path
 import logging
 
-from data_processing.data_processing import separate_images
+from data_processing.process_data import separate_images
 
 TEST_FILES_DIR = Path(__file__).parent / "test_files" / "separate_images"
 TEAR_DOWN = True
@@ -92,10 +92,13 @@ def test_separate_images_binary(setup_folders, output_folders, num_images, caplo
     # Set logging level to capture debug messages
     caplog.set_level(logging.DEBUG)
 
-    positive_dir, negative_dir = separate_images(setup_folders,
-                                                 output_folders,
-                                                 binary=True,
-                                                 split_files=False).values()
+    destination_paths = separate_images(setup_folders,
+                                        output_folders,
+                                        binary=True,
+                                        split_files=False)
+
+    positive_dir = destination_paths["positive"]
+    negative_dir = destination_paths["negative"]
 
     # Assert that files are moved correctly to positive and negative folders
     assert positive_dir.exists() and positive_dir.is_dir()
