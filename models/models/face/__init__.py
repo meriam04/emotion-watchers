@@ -1,1 +1,2 @@
-from models.face.train import CHECKPOINT_PATH, create_model, get_data
+from models.face.test import CHECKPOINT_PATH
+from models.face.train import create_model
