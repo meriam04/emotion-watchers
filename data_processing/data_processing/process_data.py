@@ -13,7 +13,7 @@ from data_processing.face.crop_ui import run_image_cropper_with_image
 from data_processing.face.video_to_images import extract_frames
 
 RATE = 1
-TIMES_FILE = "times.csv"
+TIMES_FILE_FORMAT = "times_{}_{}.csv"
 
 BINARY_EMOTIONS = {
     "anger": "negative",
@@ -94,6 +94,7 @@ def separate_images(
         if match := re.search(
             r".*(/|\\)(?P<inits>\w+)_(?P<emotion>\w+)", str(source_dir)
         ):
+            emotion = match["emotion"]
             matched_emotion = emotions[match["emotion"]]
             inits = match["inits"]
             # Get the destination paths for this source directory
@@ -138,7 +139,7 @@ def separate_images(
                 logging.debug("Copied %s to %s", filename, dest_path)
 
             # Save a list of times for data synchronization
-            with open(dest_path / TIMES_FILE, "w") as f:
+            with open(dest_path / TIMES_FILE_FORMAT.format(inits, emotion), "w") as f:
                 writer = csv.DictWriter(f, times[0].keys())
                 writer.writeheader()
                 writer.writerows(times)
