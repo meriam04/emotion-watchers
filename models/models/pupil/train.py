@@ -34,12 +34,13 @@ def get_data(pkl_dir: Path, face_dir: Path, window_size: int = 100, batch_size: 
     Get the functions from the .pkl files and timestamps from the face directories, then create the dataset.
 
     Args:
-        csv_paths: The list of paths to the .csv files containing the pupillometry data.
-        classes: The list of classes to be used in the output layer.
+        pkl_dir: The path to the directory of .pkl files containing the pupillometry splines.
+        face_dir: The path to the directory of face images (for getting the times files)
         window_size: The number of data samples to be considered at a time.
+        batch_size: The batch size to be used in the training.
 
     Returns:
-        The dataset.
+        The dataset and the label classes.
     """
     # Read the splines from the pkl files
     splines = {}
@@ -121,7 +122,7 @@ def create_model(num_classes: int, input_shape: Optional[Tuple[int, int]] = None
     model.add(Bidirectional(LSTM(16, dropout=0.2, return_sequences=False)))
 
     if num_classes == 2:
-        model.add(Dense(num_classes))
+        model.add(Dense(num_classes, "softmax"))
         loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
     else:
         model.add(Dense(num_classes, "softmax"))

@@ -75,7 +75,7 @@ def create_model(num_classes: int, input_shape: Optional[Tuple[int, int, int]] =
 
     if num_classes == 2:
         # Binary classification
-        model.add(Dense(num_classes))
+        model.add(Dense(num_classes, "softmax"))
         loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
     else:
         # Multiclass classification
