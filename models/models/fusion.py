@@ -1,12 +1,14 @@
 import csv
+import matplotlib.pyplot as plt
 import numpy as np
 import os
 from pathlib import Path
 import pickle
 from PIL import Image
 import re
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import sys
-import tensorflow as tf
+from tensorflow import convert_to_tensor, random
 from tensorflow.data import AUTOTUNE, Dataset
 from tensorflow.keras.utils import img_to_array
 from typing import Tuple
@@ -75,9 +77,9 @@ def get_data(pkl_dir: Path, face_dir: Path, image_shape: Tuple[int, int], window
                         labels.append(i)
 
     # Convert the dilations and labels to a tensor dataset
-    images_t = tf.convert_to_tensor(images)
-    dilations_t = tf.convert_to_tensor(dilation_windows)
-    labels_t = tf.convert_to_tensor(labels)
+    images_t = convert_to_tensor(images)
+    dilations_t = convert_to_tensor(dilation_windows)
+    labels_t = convert_to_tensor(labels)
     dataset = Dataset.from_tensor_slices((images_t, dilations_t, labels_t))
 
     # Prefetch datasets
@@ -85,9 +87,15 @@ def get_data(pkl_dir: Path, face_dir: Path, image_shape: Tuple[int, int], window
 
     return dataset, classes
 
+def create_confusion_matrix(labels, predictions, classes):
+    cm = confusion_matrix(labels, predictions)
+    disp = ConfusionMatrixDisplay(cm, display_labels=classes)
+    disp.plot()
+    plt.savefig(Path(__file__).parent / 'confusion_matrix.png')
+
 if __name__ == "__main__":
     # fix random seed for reproducibility
-    tf.random.set_seed(496)
+    random.set_seed(496)
 
     window_size = 100
     image_shape = (224, 224, 3)
@@ -108,12 +116,18 @@ if __name__ == "__main__":
 
     # Get the accuracy on the test set
     correct = 0
+    labels = []
+    predictions = []
     for face_image, pupil_window, label in test_set:
         face_prediction = face_model.predict(face_image)
         pupil_prediction = pupil_model.predict(pupil_window)
 
         # Check that the label matches the emotion with the highest probability
-        if np.argmax(face_prediction + pupil_prediction) == label:
+        prediction = np.argmax(face_prediction + pupil_prediction)
+        labels.append(label)
+        predictions.append(prediction)
+        if prediction == label:
             correct += 1
     
     print(f"Test accuracy: {correct/len(test_set)}")
+    create_confusion_matrix(labels, predictions, classes)
