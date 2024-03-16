@@ -150,7 +150,7 @@ def separate_images(
 
         # Copy each individual's files into the individual's directory
         if split_files and split_participants:
-            individual_path = Path(output_dir) / inits
+            individual_path = Path(output_dir) / inits / matched_emotion
             destination_paths[inits] = individual_path
 
             if not os.path.exists(individual_path):

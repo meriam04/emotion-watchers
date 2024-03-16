@@ -92,22 +92,27 @@ if __name__ == "__main__":
     window_size = 100
     image_shape = (224, 224, 3)
 
-    test_set, classes = get_data(Path(sys.argv[1]), Path(sys.argv[2]) / "test", image_shape[0:2], window_size)
+    # Get the dataset and classes
+    test_set, classes = get_data(Path(sys.argv[1]), Path(sys.argv[2]), image_shape[0:2], window_size)
 
     input_shape = (window_size, 1)
     num_classes = len(classes)
 
+    # Create the models
     face_model = face.create_model(num_classes, image_shape)
     pupil_model = pupil.create_model(num_classes, input_shape)
 
+    # Load the weights
     face_model.load_weights(face.CHECKPOINT_PATH)
     pupil_model.load_weights(pupil.CHECKPOINT_PATH)
 
+    # Get the accuracy on the test set
     correct = 0
     for face_image, pupil_window, label in test_set:
         face_prediction = face_model.predict(face_image)
         pupil_prediction = pupil_model.predict(pupil_window)
 
+        # Check that the label matches the emotion with the highest probability
         if np.argmax(face_prediction + pupil_prediction) == label:
             correct += 1
     

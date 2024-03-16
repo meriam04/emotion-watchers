@@ -122,7 +122,7 @@ def create_model(num_classes: int, input_shape: Optional[Tuple[int, int]] = None
     model.add(Bidirectional(LSTM(16, dropout=0.2, return_sequences=False)))
 
     if num_classes == 2:
-        model.add(Dense(num_classes))
+        model.add(Dense(num_classes, "softmax"))
         loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
     else:
         model.add(Dense(num_classes, "softmax"))
