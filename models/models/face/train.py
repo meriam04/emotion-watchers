@@ -16,7 +16,8 @@ from tensorflow.keras.utils import image_dataset_from_directory
 from typing import Optional, Tuple
 
 
-CHECKPOINT_PATH = Path(__file__).parent / "checkpoints/binary-{epoch:03d}.ckpt"
+BINARY_CHECKPOINT_PATH = Path(__file__).parent / "checkpoints/binary-{epoch:03d}.ckpt"
+MULTICLASS_CHECKPOINT_PATH = Path(__file__).parent / "checkpoints/multiclass-{epoch:03d}.ckpt"
 
 
 def get_data(image_dir: Path, image_size: Tuple[int, int], batch_size: int = 32):
@@ -110,5 +111,7 @@ if __name__ == "__main__":
     model = create_model(num_classes, image_shape)
 
     # Training
-    cp_callback = ModelCheckpoint(CHECKPOINT_PATH, save_weights_only=True, verbose=1)
+    cp_callback = ModelCheckpoint(BINARY_CHECKPOINT_PATH if len(classes) == 2 else MULTICLASS_CHECKPOINT_PATH,
+                                  save_weights_only=True,
+                                  verbose=1)
     model.fit(train_set, validation_data=val_set, epochs=10, callbacks=[cp_callback])

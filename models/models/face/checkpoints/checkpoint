@@ -1,2 +1,2 @@
-model_checkpoint_path: "binary-010.ckpt"
-all_model_checkpoint_paths: "binary-010.ckpt"
+model_checkpoint_path: "multiclass-010.ckpt"
+all_model_checkpoint_paths: "multiclass-010.ckpt"

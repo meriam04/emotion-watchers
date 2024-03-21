@@ -11,7 +11,7 @@ from tensorflow.data import AUTOTUNE, Dataset
 from tensorflow.keras.utils import img_to_array
 from typing import Tuple
 
-from data_processing.process_data import TIMES_FILE_FORMAT
+from data_processing.process_data import BINARY_EMOTIONS, TIMES_FILE_FORMAT
 import models.face as face
 import models.pupil as pupil
 
@@ -100,10 +100,10 @@ if __name__ == "__main__":
 
     # Create the models
     face_model = face.create_model(num_classes, image_shape)
-    pupil_model = pupil.create_model(num_classes, input_shape)
+    pupil_model = pupil.create_model(2, input_shape)
 
     # Load the weights
-    face_model.load_weights(face.CHECKPOINT_PATH)
+    face_model.load_weights(face.BINARY_CHECKPOINT_PATH if len(classes) == 2 else face.MULTICLASS_CHECKPOINT_PATH)
     pupil_model.load_weights(pupil.CHECKPOINT_PATH)
 
     # Get the accuracy on the test set
@@ -112,8 +112,17 @@ if __name__ == "__main__":
         face_prediction = face_model.predict(face_image)
         pupil_prediction = pupil_model.predict(pupil_window)
 
+        if len(classes) != 2:
+            multiclass_pupil_prediction = []
+            for v in BINARY_EMOTIONS.values():
+                if v == "negative":
+                    multiclass_pupil_prediction.append(pupil_prediction[0][0])
+                else:
+                    multiclass_pupil_prediction.append(pupil_prediction[0][1])
+            pupil_prediction = multiclass_pupil_prediction
+
         # Check that the label matches the emotion with the highest probability
         if np.argmax(face_prediction + pupil_prediction) == label:
             correct += 1
-    
+
     print(f"Test accuracy: {correct/len(test_set)}")
