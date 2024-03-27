@@ -4,11 +4,11 @@
 <details>
   <summary>Table of Contents</summary>
   <ol>
-    <li>
-      <a href="#about-the-project">About The Project</a>
-    </li>
-    <li><a href="#roadmap">Roadmap</a></li>
-    <li><a href="#references">References</a></li>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#data-flow-diagram">Data Flow Diagram</a></li>
+    <li><a href="#process-pupillometry">Process Pupillometry Data</a></li>
+    <li><a href="#process-facial">Process Facial Videos</a></li>
+    <li><a href="#expected-result">Expected Result</a></li>
   </ol>
 </details>
 
@@ -109,12 +109,23 @@ Currently the outputted data is discrete. The previous section also removes outl
    - `get_frames`: a boolean specifying whether the video should be separated to images. If `True`, it will run the video --> image sequence tool.
    - `crop_images`: a boolean specifying whether the separated images should be cropped. If `True` it will provide a cropping UI for each participant and emotion. 
   
-Here is an example on how it is run:
-```shell
-python3 face/process_data.py face_data_dir face_data_dir True True True
-```
-
-1. 
-
+  Here is an example on how it is run:
+  ```shell
+  python3 face/process_data.py face_data_dir face_data_dir True True True
+  ```
+3. Once the command is run, if the `crop_images` option was set to `True`, then a UI will appear with an image for each participant and emotion. Select the region around the participant's face and click on `Crop All` to crop all images in the directory. This will repeat for each participant and emotion. 
+![](data_processing/images/crop_ui_example.png)
+  
 
 ## Expected Result
+Before moving on to the model training and testing, please validate that the data is structured as follows:
+
+- [ ] There is one `pupil_<participant_id>_<emotion>.pkl` per participant and emotion in the specified `pupil_data_dir`.
+- [ ] In the `output_path` specified for the facial data processing, there are 3 subdirectories (train, val, test).
+- [ ] In each of the train/val/test subdirectories, there are either:
+  - [ ] 2 subdirectories (positive and negative) if  `binary` was `True` OR 
+  - [ ] one subdirectory for each emotion otherwise.
+- [ ] Validate that in each of the classes (emotion directories) the images are correctly moved (e.g. positive only contains happy, joy, calm, fun and negative only contains anger, fear, sadness)
+- [ ] Validate that the images are cropped to a square around the face.
+
+Great! Now you're ready to start training and testing the models. For instructions see the [models README](https://github.com/meriam04/emotion-watchers/models/README.md)
