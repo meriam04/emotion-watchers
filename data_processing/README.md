@@ -5,15 +5,18 @@
   <summary>Table of Contents</summary>
   <ol>
     <li><a href="#overview">Overview</a></li>
+    <li><a href="#before-we-begin">Before We Begin</a></li>
     <li><a href="#data-flow-diagram">Data Flow Diagram</a></li>
-    <li><a href="#process-pupillometry">Process Pupillometry Data</a></li>
-    <li><a href="#process-facial">Process Facial Videos</a></li>
+    <li><a href="#process-pupillometry-data">Process Pupillometry Data</a></li>
+    <li><a href="#process-facial-videos">Process Facial Videos</a></li>
     <li><a href="#expected-result">Expected Result</a></li>
   </ol>
 </details>
 
 ## Overview
-- This document illustrates the automated data processing pipeline
+- This document illustrates the automated data processing pipeline.
+
+## Before We Begin
 - From the data collected, there should be videos of each participant's facial expression for each emotion, as well as pupillometry data collected from the GazePoint.
 - The expected naming convention for the videos is `<participant_id>_<emotion>.mp4`. For example
 `cs_happy.mp4`. This is necessary for the automation to work.
@@ -84,16 +87,17 @@ Currently the outputted data is discrete. The previous section also removes outl
 2. Check that there is one `.pkl` file for each participant and emotion. For example `cs_happy.pkl`. 
 
 ## Process Facial Videos
+This process converts the videos of the participants and their emotions to correctly classified images for the model. It will result in test, val and train directories, each containing their respective data for all emotion classes.
 
 1. Start with all of the participants' facial videos in one directory. We will refer to this as the `face_data_dir`
-```shell
+  ```shell
     /face_data_dir
         cs_happy.mp4
         cs_sad.mp4
         mf_happy.mp4
         mf_sad.mp4
-```
-2. Run the `face/process_data.py` script. This requires the following parameters:
+  ```
+1. Run the `face/process_data.py` script. This requires the following parameters:
     ```python
     def process_data(
         video_dir: Path,
@@ -116,16 +120,20 @@ Currently the outputted data is discrete. The previous section also removes outl
 3. Once the command is run, if the `crop_images` option was set to `True`, then a UI will appear with an image for each participant and emotion. Select the region around the participant's face and click on `Crop All` to crop all images in the directory. This will repeat for each participant and emotion. 
 ![](data_processing/images/crop_ui_example.png)
   
-
+4. Validate that in the specified `output_path`, there are `/train`, `/val`, and `/test` directories. 
+   
+5. You may also notice subdirectories for each participant in the `output_path`. These contain the **test** data of the specified participant, which may be used for testing the models' accuracies on each participant.
+  
 ## Expected Result
 Before moving on to the model training and testing, please validate that the data is structured as follows:
 
 - [ ] There is one `pupil_<participant_id>_<emotion>.pkl` per participant and emotion in the specified `pupil_data_dir`.
 - [ ] In the `output_path` specified for the facial data processing, there are 3 subdirectories (train, val, test).
+  - [ ] You may notice additional subdirectories for each participant, containing their test images. 
 - [ ] In each of the train/val/test subdirectories, there are either:
   - [ ] 2 subdirectories (positive and negative) if  `binary` was `True` OR 
   - [ ] one subdirectory for each emotion otherwise.
 - [ ] Validate that in each of the classes (emotion directories) the images are correctly moved (e.g. positive only contains happy, joy, calm, fun and negative only contains anger, fear, sadness)
 - [ ] Validate that the images are cropped to a square around the face.
 
-Great! Now you're ready to start training and testing the models. For instructions see the [models README](https://github.com/meriam04/emotion-watchers/models/README.md)
+Great! Now you're ready to start training and testing the models. For instructions see the [models README](https://github.com/meriam04/emotion-watchers/tree/main/models/README.md)
